@@ -1,0 +1,192 @@
+/*
+ * statistics.hpp
+ *
+ *  Created on: Feb 23, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef STATISTICS_HPP_
+#define STATISTICS_HPP_
+
+#include <algorithm>
+#include <numeric>
+#include <gsl/gsl_cdf.h>
+#include "random.hpp"
+#include "Eigen/Dense"
+#include "utils.hpp"
+
+namespace LQCDA {
+
+
+/**
+ * Resampling policies
+ * A resampled sample stores the central value of a statistical quantity computed
+ * with a given sample along with its bootstrapped values
+ */
+    template<typename T>
+    class Resampler
+    {
+    protected:
+    public:
+	inline virtual static std::vector<T> resample(const std::vector<T>& d) =0;
+    };
+    
+    template<typename T>
+    class BootstrapResampler : public Resampler<T>
+    {
+    protected:
+	RandGen _rng; 		// the random numbers generator
+	int _n;			// number of bootstraps
+    public:
+	BootstrapResampler(int n) : _rng(), _n(n) {}
+	inline virtual static std::vector<T> resample(const std::vector<T>& d)
+	    {
+		std::vector<T> result;
+		unsigned int ri;
+		for(int i=0; i<_n; ++i)
+		{
+		    ri = rng.getUniformInt(n);
+		    result[i] = d[ri];
+		}
+		return result;
+	    }
+    };
+    
+    // CHECK
+    template<typename T, typename Function>
+    std::vector<typename Function::return_type> resample(const std::vector<T>& dat,
+							 Resampler<T> sampler, unsigned int n_resample, Function f) {
+	std::vector<typename Function::return_type> result(n_resample+1);
+	result[0] = f(dat);
+	for(int i=1; i<n_resample+1; ++i)
+	    result[i] = f(sampler.resample(dat));
+
+	return result;
+    }
+
+    
+/*
+ * class RandomVariable
+ * A random variable, characterized by its sample values
+ */
+    template <class ResamplingPolicy = BootstrapResampler<double>(1000)>
+    class RandomVariable
+    {
+    protected:
+	std::vector<double> _m_sample; // resampled values 
+	double _m_mean;	// mean value
+	double _m_var; // variance
+
+	void update() {
+	    _m_mean = LQCDA::mean(_m_sample);
+	    _m_var = LQCDA::variance(_m_sample);
+	}
+    public:
+	// Constructors
+	RandomVariable(const std::vector<double>& sample)
+	    : _m_sample(ResamplingPolicy.resample(sample), _m_mean(LQCDA::mean(sample)), _m_var(LQCDA::variance(sample)) {}
+
+	// Accessors
+	double mean() const { return _m_mean; }
+	double var() const { return _m_var; }
+	std::vector<double> values() const { return _m_sample; }
+    };
+
+/*
+ * RandomVariable utility functions and operators
+ */
+	template<class ResamplingPolicy>
+	inline RandomVariable<ResamplingPolicy> operator+ (
+	    const RandomVariable<ResamplingPolicy>& x, const RandomVariable<ResamplingPolicy>& y);
+
+	template<class ResamplingPolicy>
+	inline RandomVariable<ResamplingPolicy> operator+ (const RandomVariable<ResamplingPolicy>& x, double d);
+	
+	template<class ResamplingPolicy>
+	inline RandomVariable<ResamplingPolicy> operator- (
+	    const RandomVariable<ResamplingPolicy>& x, const RandomVariable<ResamplingPolicy>& y);
+	
+	template<class ResamplingPolicy>
+	inline RandomVariable<ResamplingPolicy> operator- (const RandomVariable<ResamplingPolicy>& x, double d);
+
+/*
+ * class Random Vector
+ * A vector of random variables
+ */
+    class RandomVector
+    {
+    protected:
+	std::vector<RandomVariable> _m_sample; // sample values
+	std::vector<double> _m_mean; // mean value
+	Eigen::MatrixXd _m_var;	// variance (correlated)
+
+	void update() {
+	    _m_mean = LQCDA::mean(_m_sample);
+	    _m_var = LQCDA::variance(_m_sample);
+	}
+
+	friend Eigen::MatrixXd covariance(const RandomVector&, const RandomVector&);
+    public:
+	// Constructors
+	RandomVariable() : _m_sample(), _m_mean(), _m_var() {}
+	RandomVariable(const std::vector<RandomVariable>& sample)
+	    : _m_sample(sample), _m_mean(LQCDA::mean(sample)), _m_var(LQCDA::variance(sample)) {}
+
+	// Accessors
+        std::vector<double>  mean() const { return _m_mean; }
+	Eigen::MatrixXd var() const { return _m_var; }
+	std::vector<double> uncorrelated_var() const
+	    {
+		int n = _m_mean.size();
+		std::vector<double> result(n);
+		for (int i=0; i<n; ++i)
+		    result[i] = _m_sample[i].mean();
+		return result;
+	    }
+	std::vector<RandomVariable> values() const { return _m_sample; }
+
+	// Setters
+	virtual void addValue(RandomVariable d) {
+	    _m_sample.push_back(d);
+	    update();
+	}
+	virtual void addValues(const std::vector<RandomVariable>& vals) {
+	    _m_sample.reserve(_m_sample.size() + vals.size());
+	    _m_sample.insert(_m_sample.end(), vals.begin(), vals.end());
+	    update();
+	}
+    };
+
+/*
+ * RandomVector utility functions and operators
+ */
+    inline RandomVector operator+ (const RandomVector& x, const RandomVector& y);
+    inline RandomVector operator+ (const RandomVector& x, double d);
+    inline RandomVector operator- (const RandomVector& x, const RandomVector& y);
+    inline RandomVector operator- (const RandomVector& x, double d);
+
+    inline RandomVariable dotprod (const RandomVector& x, const RandomVector& y);
+
+    Eigen::MatrixXd covariance(const RandomVector& v, const RandomVector& w);
+
+
+    double covariance(const RandomVariable& x, const RandomVariable& y)
+    {
+	return LQCDA::covariance(x.values(), y.values());
+    }
+
+
+/*
+ * Chi2 p-value given chi2_val value
+ * ie returns integral(p(x)dx, x=chi2_val..infinity) with p chi2 distribution
+ */
+    double chi2_pvalue(const double chi2_val, const size_t ndof)
+    {
+	return gsl_cdf_chisq_Q(chi2_val,(double)ndof);
+    }
+
+
+}	// namespace LQCDA
+
+
+#endif /* STATISTICS_HPP_ */

@@ -1,0 +1,225 @@
+/*
+ * io.cpp
+ *
+ *  Created on: Feb 14, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#include "io.hpp"
+#include "exceptions.hpp"
+#include <algorithm>
+#include <functional>
+
+namespace LQCDA
+{
+
+//-----------------------------------------------------------
+// AsciiReader
+//-----------------------------------------------------------
+AsciiReader::AsciiReader () {}
+
+// String reader
+void AsciiReader::read(std::string& result)
+{
+	getIstream() >> result;
+}
+
+// Readers
+void AsciiReader::read(char& result)
+{
+	readPrimitive<char> (result);
+}
+void AsciiReader::read(int& result)
+{
+	readPrimitive<int> (result);
+}
+void AsciiReader::read(unsigned int& result)
+{
+	readPrimitive<unsigned int> (result);
+}
+void AsciiReader::read(short int& result)
+{
+	readPrimitive<short int> (result);
+}
+void AsciiReader::read(unsigned short int& result)
+{
+	readPrimitive<unsigned short int> (result);
+}
+void AsciiReader::read(long int& result)
+{
+	readPrimitive<long int> (result);
+}
+void AsciiReader::read(unsigned long int& result)
+{
+	readPrimitive<unsigned long int> (result);
+}
+void AsciiReader::read(long long int& result)
+{
+	readPrimitive<long long int> (result);
+}
+void AsciiReader::read(float& result)
+{
+	readPrimitive<float> (result);
+}
+void AsciiReader::read(double& result)
+{
+	readPrimitive<double> (result);
+}
+void AsciiReader::read(bool& result)
+{
+	readPrimitive<bool> (result);
+}
+bool AsciiReader::readLine(std::string& output)
+{
+	std::istream& is = getIstream();
+	getline(is, output);
+	return !is.fail();
+}
+
+template<typename T>
+void AsciiReader::readPrimitive(T& output)
+{
+	getIstream() >> output;
+}
+
+AsciiReader& operator>>(AsciiReader& txt, std::string& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, char& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, unsigned int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, short int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, unsigned short int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, long int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, unsigned long int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, long long int& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, float& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, double& input) {
+	txt.read(input);
+	return txt;
+}
+AsciiReader& operator>>(AsciiReader& txt, bool& input) {
+	txt.read(input);
+	return txt;
+}
+
+//-----------------------------------------------------------
+// AsciiFileReader
+//-----------------------------------------------------------
+AsciiFileReader::AsciiFileReader()
+: AsciiReader() {}
+
+AsciiFileReader::AsciiFileReader(const std::string& filename)
+{
+	open(filename);
+}
+
+void AsciiFileReader::open(const std::string& filename)
+{
+	ifs.open(filename.c_str(), std::ifstream::in);
+	if(!ifs) throw IOException("AsciiFileReader", filename.c_str());
+}
+
+void AsciiFileReader::close()
+{
+	if(is_open())
+		ifs.close();
+}
+
+bool AsciiFileReader::is_open()
+{
+	return ifs.is_open();
+}
+
+AsciiFileReader::~AsciiFileReader()
+{
+	close();
+}
+
+//-----------------------------------------------------------
+// Utility functions
+//-----------------------------------------------------------
+void readArray(AsciiReader& reader, Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic>& output)
+{
+	try {
+	std::string line;
+	reader.readLine(line);
+	std::istringstream isstr (line);
+	int i, j;
+	isstr >> i >> j;
+	output.resize(i, j);
+	for(int _i=0; _i<i; ++_i)
+		for(int _j=0; _j<j; ++_j)
+		{
+			reader.read(output(_i,_j));
+		}
+	}
+	catch (const IOException& e) {
+
+	}
+}
+void readVector(AsciiReader& reader, Eigen::Array<double, Eigen::Dynamic, 1>& output)
+{
+	try {
+	int i;
+	reader.read(i);
+	output.resize(i);
+	for(int _i=0; _i<i; ++_i)
+		reader.read(output(_i));
+	}
+	catch (const IOException& e) {
+
+	}
+}
+bool getNextInstruction(AsciiReader& reader, std::string& output, IOFormat format)
+{
+	std::string line;
+	while((reader.readLine(line)))
+	{
+		// trims white space from the beginning of the line
+		line.erase(line.begin(), find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(isspace))));
+		switch (format)
+		{
+		case IOFormat::LATAN_1:
+			if(line[0]=='#')
+			{
+				output = line;
+				return true;
+			}
+			break;
+		}
+	}
+	return false;
+}
+
+}	//namespace LQCDA
+
+
