@@ -12,72 +12,82 @@
 #include <istream>
 #include <ostream>
 #include <fstream>
-#include "Eigen/Dense"
+#include <iostream>
 
 namespace LQCDA {
 
 /**
- * Enumeration to deal with several IO formats (or versions)
+ * virtual class (interface) Reader
+ * Interface used to read an input.
  */
-enum IOFormat
-{
-	LATAN_1
-};
-
-/**
- * virtual class (interface) AsciiReader
- * Interface used to read an ascii-formatted input.
- */
-class AsciiReader
-{
-public:
-	AsciiReader ();	// Empty constructor
-	virtual ~AsciiReader () {}	// Destructor
+    class Reader
+    {
+    public:
+	Reader ();	// Empty constructor
+	virtual ~Reader () {}	// Destructor
 
 	// Different bindings for the 'read' operation
-    virtual void read(std::string& result);
-    virtual void read(char& result);
-    virtual void read(int& result);
-    virtual void read(unsigned int& result);
-    virtual void read(short int& result);
-    virtual void read(unsigned short int& result);
-    virtual void read(long int& result);
-    virtual void read(unsigned long int& result);
-    virtual void read(long long int& result);
-    virtual void read(float& result);
-    virtual void read(double& result);
-    virtual void read(bool& result);
+	virtual void read(std::string& result);
+	virtual void read(char& result);
+	virtual void read(int& result);
+	virtual void read(unsigned int& result);
+	virtual void read(short int& result);
+	virtual void read(unsigned short int& result);
+	virtual void read(long int& result);
+	virtual void read(unsigned long int& result);
+	virtual void read(long long int& result);
+	virtual void read(float& result);
+	virtual void read(double& result);
+	virtual void read(bool& result);
 
-    virtual bool readLine (std::string& output);
+	virtual bool readLine (std::string& output);
 
-protected:
-    template<typename T>
-    void readPrimitive (T& output);
+    protected:
+	template<typename T>
+	void readPrimitive (T& output);
 
-    virtual std::istream& getIstream () = 0;
-};
+	virtual std::istream& getIstream () = 0;
+    };
 
-AsciiReader& operator>>(AsciiReader& txt, std::string& input);
-AsciiReader& operator>>(AsciiReader& txt, char& input);
-AsciiReader& operator>>(AsciiReader& txt, int& input);
-AsciiReader& operator>>(AsciiReader& txt, unsigned int& input);
-AsciiReader& operator>>(AsciiReader& txt, short int& input);
-AsciiReader& operator>>(AsciiReader& txt, unsigned short int& input);
-AsciiReader& operator>>(AsciiReader& txt, long int& input);
-AsciiReader& operator>>(AsciiReader& txt, unsigned long int& input);
-AsciiReader& operator>>(AsciiReader& txt, long long int& input);
-AsciiReader& operator>>(AsciiReader& txt, float& input);
-AsciiReader& operator>>(AsciiReader& txt, double& input);
-AsciiReader& operator>>(AsciiReader& txt, bool& input);
+    Reader& operator>>(Reader& txt, std::string& input);
+    Reader& operator>>(Reader& txt, char& input);
+    Reader& operator>>(Reader& txt, int& input);
+    Reader& operator>>(Reader& txt, unsigned int& input);
+    Reader& operator>>(Reader& txt, short int& input);
+    Reader& operator>>(Reader& txt, unsigned short int& input);
+    Reader& operator>>(Reader& txt, long int& input);
+    Reader& operator>>(Reader& txt, unsigned long int& input);
+    Reader& operator>>(Reader& txt, long long int& input);
+    Reader& operator>>(Reader& txt, float& input);
+    Reader& operator>>(Reader& txt, double& input);
+    Reader& operator>>(Reader& txt, bool& input);
+    
+/**
+ * Base class AsciiReader
+ * Used to read an ascii-formatted input.
+ */
+    class AsciiReader : public Reader
+    {
+    public:
+	AsciiReader ();	// Empty constructor (reads from cin by default)
+	explicit AsciiReader (std::istream& in);	// Constructs and reads from stream
+	virtual ~AsciiReader () {}	// Destructor
 
+    protected:
+	virtual std::istream& getIstream () { return is; }	// Returns internal inputstream
+
+    private:
+	std::streambuf* sbuf;
+	std::istream is;
+    };
 
 /**
  * class AsciiFileReader
  * Used to read an ascii-formatted file.
  */
-class AsciiFileReader : public AsciiReader
-{
-public:
+    class AsciiFileReader : public AsciiReader
+    {
+    public:
 	AsciiFileReader ();	// Empty constructor
 	explicit AsciiFileReader (const std::string& filename);	// Constructs and reads from file
 	~AsciiFileReader ();	// Destructor
@@ -87,40 +97,124 @@ public:
 
 	// Queries whether the file is open
 	/*!
-	 \return true if the file is open; false otherwise.
-	 */
+	  \return true if the file is open; false otherwise.
+	*/
 	bool is_open();
 
 	//! Closes the last file opened
 	void close();
 
 	//! Return the entire contents of the Reader as a stream
-	void print(std::ostream& is);
+	void print(std::ostream& os);
 
-protected:
+    protected:
 	std::ifstream& getIstream () { return ifs; }	// Returns internal filestream
-private:
+    private:
 	std::ifstream ifs;
-};
+    };
 
 
-// Utility functions to parse input data
+      
 /**
- * Reads a "matrix" of data, separated by spaces or line returns.
- * The first "line" should provide 2 integers representing the dimensions of the array
+ * virtual class (interface) Writer
+ * Interface used to write to an input.
  */
-void readArray(AsciiReader& reader, Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic>& output);
-/**
- * Reads a "vector" of data of type T, separated by spaces or line returns.
- * The first "line" should provide 1 integer representing the dimension of the vector array
- */
-void readVector(AsciiReader& reader, Eigen::Array<double, Eigen::Dynamic, 1>& output);
-/**
- * Reads the next instruction, introduced with character specified in format f
- * Returns a boolean informing whether instruction was found.
- */
-bool getNextInstruction(AsciiReader& reader, std::string& output, IOFormat f);
+    class Writer
+    {
+    public:
+	Writer ();	// Empty constructor
+	virtual ~Writer () {}	// Destructor
 
+	// Different bindings for the 'read' operation
+	virtual void write(std::string result);
+	virtual void write(const char* result);
+	virtual void write(char result);
+	virtual void write(int result);
+	virtual void write(unsigned int result);
+	virtual void write(short int result);
+	virtual void write(unsigned short int result);
+	virtual void write(long int result);
+	virtual void write(unsigned long int result);
+	virtual void write(long long int result);
+	virtual void write(float result);
+	virtual void write(double result);
+	virtual void write(bool result);
+
+	virtual bool writeLine (std::string output);
+
+    protected:
+	template<typename T>
+	void writePrimitive (T output);
+
+	virtual std::ostream& getOstream () = 0;
+    };
+
+    Writer& operator<<(Writer& txt, std::string input);
+    Writer& operator<<(Writer& txt, const char* input);
+    Writer& operator<<(Writer& txt, char input);
+    Writer& operator<<(Writer& txt, int input);
+    Writer& operator<<(Writer& txt, unsigned int input);
+    Writer& operator<<(Writer& txt, short int input);
+    Writer& operator<<(Writer& txt, unsigned short int input);
+    Writer& operator<<(Writer& txt, long int input);
+    Writer& operator<<(Writer& txt, unsigned long int input);
+    Writer& operator<<(Writer& txt, long long int input);
+    Writer& operator<<(Writer& txt, float input);
+    Writer& operator<<(Writer& txt, double input);
+    Writer& operator<<(Writer& txt, bool input);
+
+    
+/**
+ * Base class (interface) AsciiWriter
+ * Used to write an ascii-formatted input.
+ */
+    class AsciiWriter : public Writer
+    {
+    public:
+	AsciiWriter ();				  // Empty constructor
+	explicit AsciiWriter (std::ostream& out); // Constructs and writes to stream
+	virtual ~AsciiWriter () {}		  // Destructor
+
+    protected:
+	virtual std::ostream& getOstream () { return os; } // Returns internal outputstream
+
+    private:
+	std::streambuf* sbuf;
+	std::ostream os;
+    };
+
+    
+/**
+ * class AsciiFileWriter
+ * Used to write an ascii-formatted file.
+ */
+    class AsciiFileWriter : public AsciiWriter
+    {
+    public:
+	AsciiFileWriter ();	// Empty constructor
+	explicit AsciiFileWriter (const std::string& filename);	// Constructs and reads from file
+	~AsciiFileWriter ();	// Destructor
+
+	void open(const std::string& filename);	// Opens and reads an ascii file.
+	void open(std::istream& is);	// Opens and reads an ascii file.
+
+	// Queries whether the file is open
+	/*!
+	  \return true if the file is open; false otherwise.
+	*/
+	bool is_open();
+
+	//! Closes the last file opened
+	void close();
+
+	//! Return the entire contents of the Reader as a stream
+	void print(std::ostream& os);
+
+    protected:
+	std::ofstream& getOstream () { return ofs; }	// Returns internal filestream
+    private:
+	std::ofstream ofs;
+    };
 
 
 }	// namespace LQCDA

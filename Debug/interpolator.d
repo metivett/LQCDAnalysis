@@ -1,5 +1,6 @@
 interpolator.d: ../src/interpolator.cpp \
  /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/Dense \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/Core \
@@ -153,6 +154,8 @@ interpolator.d: ../src/interpolator.cpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h
 
 /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/io.hpp:
 

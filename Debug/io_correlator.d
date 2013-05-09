@@ -1,6 +1,7 @@
 io_correlator.d: ../src/io_correlator.cpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io_correlator.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/Dense \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/Core \
@@ -157,6 +158,8 @@ io_correlator.d: ../src/io_correlator.cpp \
 /home/thibaut/workspace/LQCDAnalysis/include/io_correlator.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/io.hpp:
 

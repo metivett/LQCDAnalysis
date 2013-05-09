@@ -5,7 +5,14 @@
  *      Author: Thibaut Metivet
  */
 
+#ifndef UTILS_HPP_
+#define UTILS_HPP_
+
+#include "exceptions.hpp"
+#include "Eigen/Dense"
+
 namespace LQCDA {
+ 
 
 /*
  * Computes the sum of the elements in the sequence between iterators first and last
@@ -54,9 +61,9 @@ namespace LQCDA {
 	int n = v.size();
 	if(w.size() != n)
 	    throw DataException("You're adding vectors of different sizes!");
-	std::vector<T> result(n);
+	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] = v[i] + w[i];
+	    result[i] += w[i];
 	return result;
     }
     template<typename T>
@@ -74,9 +81,9 @@ namespace LQCDA {
 	int n = v.size();
 	if(w.size() != n)
 	    throw DataException("You're substracting vectors of different sizes!");
-	std::vector<T> result(n);
+	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] = v[i] - w[i];
+	    result[i] -= w[i];
 	return result;
     }
     template<typename T>
@@ -94,9 +101,9 @@ namespace LQCDA {
 	int n = v.size();
 	if(w.size() != n)
 	    throw DataException("You're multiplying vectors of different sizes!");
-	std::vector<T> result(n);
+	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] = v[i] * w[i];
+	    result[i] *= w[i];
 	return result;
     }
     template<typename T>
@@ -110,49 +117,6 @@ namespace LQCDA {
     }
 
 
-
-/*
- * Statistical functions to deal with samples of vectors
- */
-    template<typename T>
-    T variance (const std::vector<T>& v)
-    {
-	std::vector<T> x = v - mean(v);
-	return mean(x*x);
-    }
-    template<typename T>
-    T covariance (const std::vector<T>& v, const std::vector<T>& w)
-    {
-	int n = v.size();
-	int m = w.size();
-	if(n != m)
-	    throw DataException("You're computing covariance with sample vectors of different sizes!");
-	std::vector<T> x = v - mean(v);
-	std::vector<T> y = w - mean(w);
-	return mean(x*y);
-    }
-    template<typename Scalar, int Rows, int Cols>
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance(
-	const std::vector<Eigen::Array<Scalar, Rows, Cols> >& v,
-	const std::vector<Eigen::Array<Scalar, Rows, Cols> >& w) {
-	int n = v.size();
-	int m = w.size();
-	if(n != m)
-	    throw DataException("You're computing covariance with sample vectors of different sizes!");
-	std::vector<Eigen::Array<Scalar, Rows, Cols> > x = v - mean(v);
-	std::vector<Eigen::Array<Scalar, Rows, Cols> > y = w - mean(w);
-	std::vector<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> > result(n);
-
-	struct v_times_w_transpose {
-	    v_times_w_transpose() {}
-	    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> operator() (
-		const Eigen::Array<Scalar, Rows, Cols>& a,
-		const Eigen::Array<Scalar, Rows, Cols>& b) {
-		return a.matrix() * b.matrix().transpose();
-	    }
-	};
-	std::transform(x.begin(), x.end(), y.begin(), result.begin(), v_times_w_transpose());
-	return mean(result);
-    }
-
 } // namespace LQCDA
+
+#endif /* UTILS_HPP_ */

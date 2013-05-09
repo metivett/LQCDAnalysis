@@ -60,6 +60,13 @@ namespace LQCDA {
 	std::string filename;
     };
 
+    class MinimizationException : public LQCDA_Exception
+    {
+    public:
+	MinimizationException()
+	    : LQCDA_Exception("Minimization") {}
+    };
+
 } // namespace LQCDA
 
 #endif /* EXCEPTIONS_HPP_ */

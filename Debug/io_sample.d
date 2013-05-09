@@ -152,6 +152,7 @@ io_sample.d: ../src/io_sample.cpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io_correlator.hpp
 
 /home/thibaut/workspace/LQCDAnalysis/include/io_sample.hpp:
@@ -459,5 +460,7 @@ io_sample.d: ../src/io_sample.cpp \
 /home/thibaut/workspace/LQCDAnalysis/include/io.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/interpolator.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/io_correlator.hpp:
