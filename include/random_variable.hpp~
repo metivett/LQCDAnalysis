@@ -1,0 +1,127 @@
+/*
+ * random_variable.hpp
+ *
+ *  Created on: Apr 09, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef RANDOM_VARIABLE_HPP_
+#define RANDOM_VARIABLE_HPP_
+
+#include <vector>
+#include <memory>
+#include "resampler.hpp"
+
+namespace LQCDA {
+       
+/*
+ * class RandomVariable
+ * A random variable, characterized by its sample values
+ */
+    class RandomVariable
+    {
+    protected:
+	std::vector<double> _m_sample; // resampled values 
+	double _m_mean;	// mean value
+	double _m_var; // variance
+
+    public:
+    // Constructors
+        RandomVariable(const std::vector<double>& sample, const std::shared_ptr<Resampler<double> > rs);
+        RandomVariable(const RandomVariable& v);
+        RandomVariable();
+
+    // Accessors
+	double mean() const { return _m_mean; }
+	double var() const { return _m_var; }
+	const std::vector<double>& values() const { return _m_sample; }
+	double value(size_t k) const { return _m_sample[k]; }
+	const std::shared_ptr<Resampler<double> > getResampler() const { return _resampler; }
+	int nSample() const { return _m_sample.size(); }
+
+    // Operators
+        RandomVariable& operator= (const RandomVariable& v);
+	RandomVariable& operator+= (const RandomVariable& y);
+	RandomVariable& operator+= (double d);
+	RandomVariable& operator-= (const RandomVariable& y);
+	RandomVariable& operator-= (double d);
+	RandomVariable& operator*= (const RandomVariable& y);
+	RandomVariable& operator*= (double d);
+
+    private:
+	std::shared_ptr<Resampler<double> > _resampler;
+
+	void update();
+    };
+
+/*
+ * RandomVariable utility functions and operators
+ */
+inline RandomVariable& RandomVariable::operator+= (const RandomVariable& y) {
+    _m_sample = _m_sample + y.values();
+    update();
+    return *this;
+}
+inline RandomVariable& RandomVariable::operator+= (double d) {
+    _m_sample = _m_sample + d;
+    update();
+    return *this;
+}
+inline RandomVariable& RandomVariable::operator-= (const RandomVariable& y) {
+    _m_sample = _m_sample - y.values();
+    update();
+    return *this;
+}
+inline RandomVariable& RandomVariable::operator-= (double d) {
+    _m_sample = _m_sample - d;
+    update();
+    return *this;
+}
+inline RandomVariable& RandomVariable::operator*= (const RandomVariable& y) {
+    _m_sample = _m_sample * y.values();
+    update();
+    return *this;
+}
+inline RandomVariable& RandomVariable::operator*= (double d) {
+    _m_sample = _m_sample * d;
+    update();
+    return *this;
+}
+
+inline RandomVariable operator+ (const RandomVariable& x, const RandomVariable& y)
+{ 
+    return RandomVariable(x.values() + y.values(), x.getResampler());
+}
+
+inline RandomVariable operator+ (const RandomVariable& x, double d)
+{
+    return RandomVariable(x.values() + d, x.getResampler());
+}
+
+inline RandomVariable operator- (const RandomVariable& x, const RandomVariable& y)
+{ 
+    return RandomVariable(x.values() - y.values(), x.getResampler());
+}
+
+inline RandomVariable operator- (const RandomVariable& x, double d)
+{
+    return RandomVariable(x.values() - d, x.getResampler());
+}
+    
+inline RandomVariable operator* (const RandomVariable& x, const RandomVariable& y)
+{ 
+    return RandomVariable(x.values() * y.values(), x.getResampler());
+}
+
+inline RandomVariable operator* (const RandomVariable& x, double d)
+{
+    return RandomVariable(x.values() * d, x.getResampler());
+}
+
+    double covariance(const RandomVariable& x, const RandomVariable& y);
+    
+} // namespace LQCDA
+
+
+
+#endif /* RANDOM_VARIABLE_HPP_ */

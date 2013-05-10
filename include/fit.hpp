@@ -30,17 +30,54 @@
 using namespace ROOT;
 using namespace Minuit2;
 
-namespace LQCDA {  
+namespace LQCDA {
+    
+    class FitBase
+    {
+    protected:
+	FitModel* _model;
+	
+	bool _isComputed;
+	const double InitError = 0.5;
+	
+	size_t _nFittedParams;
+
+    public:
+	FitBase(FitModel* model)
+	    : _model(model), _isComputed(false),
+	      _nFittedParams(model->nParams())
+	    {}
+
+	size_t nFittedParams() { return _nFittedParams; }
+
+	virtual double getFittedParameter(unsigned int n) =0;
+	virtual double getFittedError(unsigned int n) =0;
+	
+	void printParameters();
+    };
+
+    inline void FitBase::printParameters()
+    {
+	if(_isComputed) {
+	    LQCDOut<<"\nFitted parameters:\n";
+	    for(int i=0; i<_nFittedParams; ++i) {
+		LQCDOut<<"p"<<i<<" = "<<getFittedParameter(i)<<" +- "<<getFittedError(i)
+		       <<'\n';
+	    }
+	}
+	else {
+	    LQCDOut<<"\nFit results not computed !\n";
+	}
+    }
     
     template<class Fcn>
-    class Fit
+    class Fit : public FitBase
     {
     private:
 	FitDataBase* _fitdata;
-	FitModel* _model;
-	std::vector<FunctionMinimum> _min;
-
-	size_t _nFittedParams;
+//	FunctionMinimum _min;
+	vector<double> _fittedParams;
+	vector<double> _fittedErrors;
 	
     protected:
 	bool _isComputed;
@@ -48,10 +85,18 @@ namespace LQCDA {
 	
     public:
 	Fit(FitDataBase* data, FitModel* model)
-	    : _fitdata(data), _model(model),
-	      _min(), _nFittedParams(0), _isComputed(false)
+	    : FitBase(model), _fitdata(data),
+	      _fittedParams(), _fittedErrors(),
+	      _isComputed(false)
 	    {
 		// TODO : checks for coherence
+		for(int k=0; k<nxDim; ++k) {
+		    if(_fitdata->is_x_corr(k)) {
+			_nFittedParams += data->nData();
+		    }
+		}
+		_fittedParams.resize(_nFittedParams);
+		_fittedErrors.resize(_nFittedParams);
 	    }
 
 	void fit(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
@@ -65,7 +110,7 @@ namespace LQCDA {
 	void printParameters();
 
     private:
-	virtual void fit_impl(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
+	void fit_impl(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
     };
 
     // Fit::fit() member function
@@ -80,7 +125,7 @@ namespace LQCDA {
 
     template<class Fcn>
     void Fit<Fcn>::fit_impl(const std::vector<double>& initPar,
-				const std::vector<LimitBase*>& parLimits)
+			    const std::vector<LimitBase*>& parLimits)
     {
 	size_t nParModel = _model->nParams();
 	int nxDim = _fitdata->nxDim();
@@ -122,17 +167,15 @@ namespace LQCDA {
 		    oss<<"x"<<i<<k;
 		    // Add parameter p
 		    init_par.Add(oss.str().c_str(), _fitdata->x(i,k), abs(_fitdata->x(i,k)) * InitError);
-		    _nFittedParams++;
 		}
 	    }
 	}
 
 	LQCDDebug(1)<<"\nFit dimensions :\n"
-		   <<"nxDim = "<<nxDim<<'\n'
-		   <<"nyDim = "<<nyDim<<'\n'
-		   <<"nData = "<<nData<<'\n';
+		    <<"nxDim = "<<nxDim<<'\n'
+		    <<"nyDim = "<<nyDim<<'\n'
+		    <<"nData = "<<nData<<'\n';
 	LQCDDebug(1)<<"\nX-corr = "<<_fitdata->have_x_corr()<<'\n';
-		
 	// TODO Extend to support several minimizers
 
         // Fit each resampled sample
@@ -161,7 +204,10 @@ namespace LQCDA {
 	    }
 	    else {
 		_isComputed = true;
-		_min.push_back(Min);
+		for(int i=0; i<_nFittedParams; ++i) {
+		    _fittedParams[i] = Min.UserParameters().Value(i);
+		    _fittedErrors[i] = Min.UserParameters().Error(i);
+		}
 	    }
 	    LQCDDebug(3)<<"(MINUIT) Minimizer call :\n"
 			<< "--------------------------------------------------------"
@@ -191,57 +237,20 @@ namespace LQCDA {
     template<class Fcn>
     inline double Fit<Fcn>::getFittedParameter(unsigned int n)
     {
-	if(n >= _nFittedParams())
+	if(n >= _nFittedParams)
 	    throw OutOfRange("Fit<Fcn>::getFittedParameter", n);
 	else {
-	    double res;
-	    if(_fitdata->nSample() > 1) {
-		std::vector<double> p;
-		for(int i=0; i<_min.size(); ++i) {
-		    p.push_back(_min[i].UserParameters().Value(n));
-		}
-		res = _fitdata->mean(p);
-	    }
-	    else {
-		res = _min[0].UserParameters().Value(n);
-	    }
-	    return res;
+	    return _fittedParameter[n];
 	}
     }
 
     template<class Fcn>
     inline double Fit<Fcn>::getFittedError(unsigned int n)
     {
-	if(n >= _nFittedParams())
+	if(n >= _nFittedParams)
 	    throw OutOfRange("Fit<Fcn>::getFittedParameter", n);
 	else {
-	    double res;
-	    if(_fitdata->nSample() > 1) {
-		!std::vector<double> p;
-		for(int i=0; i<_min.size(); ++i) {
-		    p.push_back(_min[i].UserParameters().Error(n));
-		}
-		res = _fitdata->mean(p);
-	    }
-	    else {
-		res = _min[0].UserParameters().Error(n);
-	    }
-	    return res;
-	}
-    }
-
-    template<class Fcn>
-    void Fit<Fcn>::printParameters()
-    {
-	if(_isComputed) {
-	    LQCDOut<<"\nFitted parameters:\n"
-	    for(int i=0; i<_nFittedParams; ++i) {
-		LQCDOut<<"p"<<i<<" = "<<getFittedParameter(i)<<" +- "<<getFittedError(i)
-		       <<'\n';
-	    }
-	}
-	else {
-	    LQCDOut<<"\nFit results not computed !\n";
+	    return _fittedErrors[n];
 	}
     }
 

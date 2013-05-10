@@ -1,0 +1,150 @@
+/*
+ * random_vector.hpp
+ *
+ *  Created on: Apr 09, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef RANDOM_VECTOR_HPP_
+#define RANDOM_VECTOR_HPP_
+
+#include "random_variable.hpp"
+#include "Eigen/Dense"
+
+namespace LQCDA {
+
+/*
+ * class Random Vector
+ * A vector of random variables
+ */
+    class RandomVector
+    {
+    protected:
+	std::vector<RandomVariable> _m_variables; // random variables
+	std::vector<double> _m_mean; // vector of mean values
+	Eigen::MatrixXd _m_var;	// correlated variance
+
+	int _nSample;
+
+	friend Eigen::MatrixXd covariance(const RandomVector&, const RandomVector&);
+    public:
+	// Constructors
+	RandomVector() : _m_variables(), _m_mean(), _m_var() {}
+	RandomVector(const std::vector<RandomVariable>& variables);
+
+	// Accessors
+	int size() const { return _m_variables.size(); }
+	int nSample() const { return _nSample; }
+        std::vector<double>  mean() const { return _m_mean; }
+	Eigen::MatrixXd var() const { return _m_var; }
+	std::vector<double> uncorrelated_var() const;
+	const std::vector<RandomVariable>& variables() const { return _m_variables; }
+	
+	std::vector<double> vector(size_t k) const; // returns a vector made with value number k of each sample
+
+	// Setters
+	void addVariable(RandomVariable d);
+	void addVariables(const std::vector<RandomVariable>& vals);
+
+	// Operators
+	RandomVariable& operator[] (size_t i);
+	const RandomVariable& operator[] (size_t i) const;
+	std::vector<RandomVariable> getCenteredVector() const;
+
+    private:
+	void update(size_t index);
+    };
+
+/*
+ * RandomVector utility functions and operators
+ */
+inline RandomVariable& RandomVector::operator[] (size_t i) {
+    if(i<0 || i>_m_variables.size()-1)
+	throw OutOfRange("RandomVector", i);
+    return _m_variables[i];
+}
+inline const RandomVariable& RandomVector::operator[] (size_t i) const {
+    if(i<0 || i>_m_variables.size()-1)
+	throw OutOfRange("RandomVector", i);
+    return _m_variables[i];
+}
+inline std::vector<RandomVariable> RandomVector::getCenteredVector() const {
+    std::vector<RandomVariable> result = _m_variables;
+    for(int i=0; i<result.size(); ++i) {
+	result[i] -= _m_mean[i];
+    }
+    return result;
+}
+
+inline RandomVector operator+ (const RandomVector& x, const RandomVector& y)
+{ 
+    return RandomVector(x.variables() + y.variables());
+}
+inline RandomVector operator+ (const RandomVector& x, const std::vector<double>& v)
+{
+    std::vector<RandomVariable> var = x.variables();
+    if(v.size() != var.size())
+	throw DataException("You're adding vectors of different sizes!");
+    for(int i=0; i<var.size(); ++i)
+	var[i] += v[i];
+    return RandomVector(var);
+}
+inline RandomVector operator+ (const RandomVector& x, double d)
+{
+    std::vector<RandomVariable> var = x.variables();
+    for(int i=0; i<var.size(); ++i)
+	var[i] += d;
+    return RandomVector(var);
+}
+
+inline RandomVector operator- (const RandomVector& x, const RandomVector& y)
+{ 
+    return RandomVector(x.variables() - y.variables());
+}
+inline RandomVector operator- (const RandomVector& x, const std::vector<double>& v)
+{ 
+    std::vector<RandomVariable> var = x.variables();
+    if(v.size() != var.size())
+	throw DataException("You're adding vectors of different sizes!");
+    for(int i=0; i<var.size(); ++i)
+	var[i] -= v[i];
+    return RandomVector(var);
+}
+inline RandomVector operator- (const RandomVector& x, double d)
+{ 
+    std::vector<RandomVariable> var = x.variables();
+
+    for(int i=0; i<var.size(); ++i)
+	var[i] -= d;
+    return RandomVector(var);
+}
+
+inline RandomVector operator* (const RandomVector& x, const RandomVector& y)
+{ 
+    return RandomVector(x.variables() * y.variables());
+}
+inline RandomVector operator* (const RandomVector& x, const std::vector<double>& v)
+{ 
+    std::vector<RandomVariable> var = x.variables();
+    if(v.size() != var.size())
+	throw DataException("You're adding vectors of different sizes!");
+    for(int i=0; i<var.size(); ++i)
+	var[i] *= v[i];
+    return RandomVector(var);
+}	
+inline RandomVector operator* (const RandomVector& x, double d)
+{ 
+    std::vector<RandomVariable> var = x.variables();
+
+    for(int i=0; i<var.size(); ++i)
+	var[i] *= d;
+    return RandomVector(var);
+}
+
+    RandomVariable dotprod (const RandomVector& x, const RandomVector& y);
+
+    Eigen::MatrixXd covariance(const RandomVector& x, const RandomVector& y);
+    
+} // namespace LQCDA
+
+#endif /* RANDOM_VECTOR_HPP_ */

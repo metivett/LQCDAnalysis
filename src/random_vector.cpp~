@@ -1,0 +1,111 @@
+/*
+ * random_vector.cpp
+ *
+ *  Created on: Apr 09, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#include "random_vector.hpp"
+#include "exceptions.hpp"
+
+using namespace LQCDA;
+
+void RandomVector::update(size_t index) {
+    size_t n = _m_variables.size();
+    _m_mean.resize(n);
+    _m_var.conservativeResize(n,n);
+    for(int i=0; i<index; ++i)
+    {
+	for(int j=index; j<n; ++j)
+	{
+	    _m_var(i,j) = _m_var(j,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[j] - _m_variables[j].mean())).mean();
+	}
+    }
+    for(int i=index; i<n; ++i)
+    {
+	_m_mean[i] = _m_variables[i].mean();
+	_m_var(i,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[i] - _m_variables[i].mean())).mean();
+	for(int j=i+1; j<n; ++j)
+	{
+	    _m_var(i,j) = _m_var(j,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[j] - _m_variables[j].mean())).mean();
+	}
+    }
+}
+
+RandomVector::RandomVector(const std::vector<RandomVariable>& variables)
+    : _m_variables(variables), _m_mean(variables.size()), _m_var(variables.size(), variables.size())
+{
+    _nSample = variables[0].nSample();
+    int n = variables.size();
+    for(int i=0; i<n; ++i)
+    {
+	if(variables[i].nSample()!=_nSample) {
+	    throw DataException("You're dealing with incompatible resampled data!");
+	}
+	_m_mean[i] = variables[i].mean();
+	_m_var(i,i) = ((variables[i] - variables[i].mean()) * (variables[i] - variables[i].mean())).mean();
+	for(int j=i+1; j<n; ++j)
+	{
+	    _m_var(i,j) = _m_var(j,i) = ((variables[i] - variables[i].mean()) * (variables[j] - variables[j].mean())).mean();
+	}
+    }
+}
+
+std::vector<double> RandomVector::uncorrelated_var() const
+{
+    int n = _m_variables.size();
+    std::vector<double> result(n);
+    for (int i=0; i<n; ++i)
+	result[i] = _m_variables[i].var();
+    return result;
+}
+
+std::vector<double> RandomVector::vector(size_t k) const
+{
+    if(k<0 || k>=_nSample)
+	throw OutOfRange("RandomVector::vector", k);
+    std::vector<double> result(size());
+    for(int i=0; i<size(); ++i) {
+	result[i] = _m_variables[i].value(k);
+    }
+    return result;
+}
+
+void RandomVector::addVariable(RandomVariable d) {
+    size_t curr_ind = _m_variables.size();
+    _m_variables.push_back(d);
+    update(curr_ind);
+}
+
+void RandomVector::addVariables(const std::vector<RandomVariable>& vals) {
+    size_t curr_ind = _m_variables.size();
+    _m_variables.reserve(curr_ind + vals.size());
+    _m_variables.insert(_m_variables.end(), vals.begin(), vals.end());
+    update(curr_ind);
+}
+
+RandomVariable LQCDA::dotprod (const RandomVector& x, const RandomVector& y)
+{
+    if(x.size() == 0 || x.size() != y.size())
+	throw DataException("You're trying to dotproduct random vectors with either null or different sizes !");
+    RandomVariable result = x[0] * y[0];
+    for(int i=1; i<x.size(); ++i)
+	result += x[i] * y[i];
+    return result;
+}
+
+Eigen::MatrixXd LQCDA::covariance(const RandomVector& x, const RandomVector& y)
+{
+    if(x.size() == 0 || y.size() == 0)
+	throw DataException("You're trying to compute covariance of random vectors with either null sizes !");
+
+    Eigen::MatrixXd result(x.size(), y.size());
+    std::vector<RandomVariable> X_tilda = x.getCenteredVector();
+    std::vector<RandomVariable> Y_tilda = y.getCenteredVector();
+    
+    for(int i=0; i<x.size(); ++i)
+	for(int j=0; j<y.size(); ++j)
+	    result(i,j) = (X_tilda[i] * Y_tilda[j]).mean();
+
+    return result;
+}

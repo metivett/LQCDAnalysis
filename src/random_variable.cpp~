@@ -1,0 +1,48 @@
+/*
+ * random_variable.cpp
+ *
+ *  Created on: Apr 09, 2013
+ *      Author: Thibaut Metivet
+ */
+
+
+#include "random_variable.hpp"
+#include "utils.hpp"
+#include "statistics.hpp"
+
+using namespace LQCDA;
+
+RandomVariable::RandomVariable(const std::vector<double>& sample, const std::shared_ptr<Resampler<double> > rs)
+    : _m_sample(sample), _resampler(rs)
+{
+    _m_mean = _resampler->mean(_m_sample);
+    _m_var = _resampler->variance(_m_sample);
+}
+
+RandomVariable::RandomVariable(const RandomVariable& v)
+    : _m_sample(v._m_sample), _m_mean(v._m_mean), _m_var(v._m_var), _resampler(v._resampler)
+{}
+
+RandomVariable::RandomVariable()
+    : _m_sample(), _m_mean(0), _m_var(0), _resampler()
+{}
+
+void RandomVariable::update()
+{
+    _m_mean = _resampler->mean(_m_sample);
+    _m_var = _resampler->variance(_m_sample);
+}
+
+RandomVariable& RandomVariable::operator= (const RandomVariable& v)
+{
+    _m_sample = v._m_sample;
+    _m_mean = v._m_mean;
+    _m_var = v._m_var;
+    _resampler = v._resampler;
+    return *this;
+}
+
+double covariance(const RandomVariable& x, const RandomVariable& y)
+{
+    return SampleCovariance(x.values(), y.values());
+}

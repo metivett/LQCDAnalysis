@@ -67,6 +67,14 @@ namespace LQCDA {
 	    : LQCDA_Exception("Minimization") {}
     };
 
+    class ResamplingException : public LQCDA_Exception
+    {
+    public:
+	ResamplingException(const char* msg)
+	    : LQCDA_Exception(), _msg(msg) {}
+	std::string _msg;
+    };
+
 } // namespace LQCDA
 
 #endif /* EXCEPTIONS_HPP_ */
