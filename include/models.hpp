@@ -41,14 +41,14 @@ namespace LQCDA {
 
 	double eval(size_t k, const std::vector<double>& x, const std::vector<double>& params) const
 	    {
-		if(k >= _m_fcts.size())
+		if(k >= _m_y_dim)
 		    throw OutOfRange("FitModel::eval()", k);
 		else return (*_m_fcts[k])(x, params);
 	    }
 	std::vector<double> eval(const std::vector<double>& x, const std::vector<double>& params) const
 	    {
-		std::vector<double> res(_m_fcts.size());
-		for(int i=0; i<_m_fcts.size(); ++i)
+		std::vector<double> res(_m_y_dim);
+		for(int i=0; i<_m_y_dim; ++i)
 		    res[i] = (*_m_fcts[i])(x, params);
 
 		return res;

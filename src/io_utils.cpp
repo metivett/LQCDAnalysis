@@ -28,7 +28,7 @@ namespace LQCDA {
     std::ostream VerbosityFilteredOutStream::null_out(&nullbuf);
 
     std::ostream LQCDOut(std::cout.rdbuf());
-    VerbosityFilteredOutStream LQCDDebug(std::cout, 0);
+    VerbosityFilteredOutStream LQCDDebug(std::cout, 1);
 
 } // namespace LQCDA
 

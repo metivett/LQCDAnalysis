@@ -12,6 +12,7 @@
 #include "models.hpp"
 #include "Minuit2/FCNBase.h"
 #include "Eigen/Dense"
+#include "io_utils.hpp"
 
 using namespace ROOT;
 using namespace Minuit2;
@@ -41,10 +42,17 @@ namespace LQCDA {
 
 	virtual double Up () const { return 1.0; }
 	virtual double operator() (const std::vector<double>& params) const;
+
+	double getLastValue() const { return last_value; }
+	size_t getDOF() const;
     private:
 	// Compute inverses of covariance matrices
 	void compute_C_inv(FitDataBase* data);
+
+	mutable double last_value;
     };
+
+    std::ostream& operator<< (std::ostream& os, const Chi2Base& f);
 
 } // namespace LQCDA
 

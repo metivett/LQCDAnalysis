@@ -68,7 +68,15 @@ double Chi2Base::operator() (const std::vector<double>& params) const
 	res = Y.transpose() * _m_C_inv_yy * Y;
     }
 
+    last_value = res;
     return res;
+}
+
+size_t Chi2Base::getDOF() const
+{
+    size_t dof;
+    dof = _m_fitdata->nData() * _m_fitdata->nyDim() - _m_model->nParams();
+    return dof;
 }
 
 void Chi2Base::compute_C_inv(FitDataBase* data)
@@ -81,23 +89,45 @@ void Chi2Base::compute_C_inv(FitDataBase* data)
     // ( A B )-1   ( X      -XBD-1        )
     // ( C D )   = ( -D-1CX D-1+D-1CXBD-1 )
     // with X=(A-BD-1C)-1
-    if(C_yy.isZero()) {
+    if(C_yy.determinant() == 0) {
 	_m_C_inv_yy = Eigen::MatrixXd::Identity(C_yy.rows(), C_yy.cols());
-    }
-    else {
-	_m_C_inv_yy = C_yy.inverse();
-    }
-    if(C_xy.isZero()) {
-	if(C_yy.isZero()) {
+	_m_C_inv_xy = Eigen::MatrixXd::Zero(C_xy.rows(), C_xy.cols());
+	if(C_xx.determinant() == 0) {
 	    _m_C_inv_xx = Eigen::MatrixXd::Identity(C_xx.rows(), C_xx.cols());
 	}
 	else {
 	    _m_C_inv_xx = C_xx.inverse();
 	}
-	_m_C_inv_xy = Eigen::MatrixXd::Zero(C_xy.rows(), C_xy.cols());
     }
     else {
-	_m_C_inv_xx = (C_xx - C_xy * _m_C_inv_yy * C_xy.transpose()).inverse();
-	_m_C_inv_xy = - _m_C_inv_xx * C_xy * _m_C_inv_yy;
+	if(C_xy.isZero()) {
+	    _m_C_inv_xx = C_xx.inverse();
+	    _m_C_inv_xy = Eigen::MatrixXd::Zero(C_xy.rows(), C_xy.cols());
+	    _m_C_inv_yy = C_yy.inverse();
+	}
+	else {
+	    Eigen::MatrixXd D_inv = C_yy.inverse();
+	    _m_C_inv_xx = (C_xx - C_xy * D_inv * C_xy.transpose()).inverse();
+	    _m_C_inv_xy = - _m_C_inv_xx * C_xy * D_inv;
+	    _m_C_inv_yy = D_inv + D_inv * C_xy.transpose() * _m_C_inv_xx * C_xy * D_inv;
+	}
     }
+
+    /*Eigen::MatrixXd C(C_xx.rows()+C_yy.rows(),C_xx.cols()+C_yy.cols());
+    C.block(0,0,C_xx.rows(),C_xx.cols()) = C_xx;
+    C.block(0,C_xx.cols(),C_xx.rows(),C_yy.cols()) = C_xy;
+    C.block(C_xx.rows(),0,C_yy.rows(),C_xx.cols()) = C_xy.transpose();
+    C.block(C_xx.rows(),C_xx.cols(),C_yy.rows(),C_yy.cols()) = C_yy;
+
+    Eigen::MatrixXd C_inv = C.inverse();
+    LQCDOut<<C_xy;
+    _m_C_inv_xx = C_inv.block(0,0,C_xx.rows(),C_xx.cols());
+    _m_C_inv_xy = C_inv.block(0,C_xx.cols(),C_xx.rows(),C_yy.cols());
+    _m_C_inv_yy = C_inv.block(C_xx.rows(),C_xx.cols(),C_yy.rows(),C_yy.cols());*/
+}
+
+std::ostream& LQCDA::operator<< (std::ostream& os, const Chi2Base& f)
+{
+    os<<"Chi2/DOF = "<<(f.getLastValue() / f.getDOF());
+    return os;
 }

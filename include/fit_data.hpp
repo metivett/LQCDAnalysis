@@ -12,6 +12,7 @@
 #include "statistics.hpp"
 #include <vector>
 #include "Eigen/Dense"
+#include "io_utils.hpp"
 
 namespace LQCDA {
 
@@ -66,8 +67,11 @@ namespace LQCDA {
 
     protected:
 	template <class V>
-	static Eigen::MatrixXd compute_C(const std::vector<V>& data, const std::vector<V>& x);
-	
+	static Eigen::MatrixXd compute_C_xx(const std::vector<V>& data, const std::vector<V>& x);
+	template <class V>
+	static Eigen::MatrixXd compute_C_yy(const std::vector<V>& data);
+	template <class V>
+	static Eigen::MatrixXd compute_C_xy(const std::vector<V>& data, const std::vector<V>& x);	
     };
 
     
@@ -75,7 +79,7 @@ namespace LQCDA {
 // FitData utility functions
 //-----------------------------------------------------------
     template <class V>
-    static Eigen::MatrixXd FitDataBase::compute_C_xx(const std::vector<V>& data, const std::vector<V>& x)
+    Eigen::MatrixXd FitDataBase::compute_C_xx(const std::vector<V>& data, const std::vector<V>& x)
     {
 	int nData = data.size();
 	int nxDim = x[0].size();
@@ -89,21 +93,21 @@ namespace LQCDA {
 	return C_xx;
     }
     template <class V>
-    static Eigen::MatrixXd FitDataBase::compute_C_yy(const std::vector<V>& data)
+    Eigen::MatrixXd FitDataBase::compute_C_yy(const std::vector<V>& data)
     {
 	int nData = data.size();
 	int nyDim = data[0].size();
-	Eigen::MatrixXd C_xx(nyDim*nData,nyDim*nData);
+	Eigen::MatrixXd C_yy(nyDim*nData,nyDim*nData);
 	for(int i=0; i<nData; ++i) {
 	    for(int j=0; j<nData; ++j) {
 		C_yy.block(i,j,nyDim,nyDim) = covariance(data[i],data[j]);
 	    }
 	}
-
+	
 	return C_yy;
     }
     template <class V>
-    static Eigen::MatrixXd FitDataBase::compute_C_xy(const std::vector<V>& data, const std::vector<V>& x)
+    Eigen::MatrixXd FitDataBase::compute_C_xy(const std::vector<V>& data, const std::vector<V>& x)
     {
 	int nData = data.size();
 	int nxDim = x[0].size();
@@ -120,7 +124,7 @@ namespace LQCDA {
 
     class ResampledFitDataBase : public FitDataBase
     {
-    private:
+    protected:
 	unsigned int _nSamples;	// number of samples
 	unsigned int _currentSample; // current sample
 
@@ -134,6 +138,7 @@ namespace LQCDA {
 	    {}
 
 	unsigned int nSample() const { return _nSamples; }
+	
 	void setCurrentSample(unsigned int k) {
 	    if(k >= _nSamples)
 		throw ResamplingException("Unexistent sample !");
@@ -178,14 +183,6 @@ namespace LQCDA {
 	double y(size_t i, size_t k) const { return (_data)[i][k]; }
 	std::vector<double> x(size_t i) const { return (_x)[i]; }
 	double x(size_t i, size_t k) const { return (_x)[i][k]; }
-
-    private:
-	FitData(const std::vector<std::vector<double> >& data,
-		const std::vector<std::vector<double> >& x,
-		FitDataBase* base)
-	    : _data(data), _x(x),
-	      FitDataBase(*base)
-	    {}
     };
 
 
