@@ -1,0 +1,33 @@
+/*
+ * point_cloud.hpp
+ *
+ *  Created on: May 13, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef POINT_CLOUD_HPP_
+#define POINT_CLOUD_HPP_
+
+#include <vector>
+
+namespace LQCDA {
+
+class Point
+{
+public:
+    std::vector<double> x;
+    std::vector<double> y;
+    std::vector<double> xErr;
+    std::vector<double> yErr;
+
+public:
+    Point(const std::vector<double>& xx, const std::vector<double>& yy)
+	: x(xx), y(yy)
+    {}
+
+    
+};
+
+} // namespace LQCDA
+
+#endif	// POINT_CLOUD_HPP_

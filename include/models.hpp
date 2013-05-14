@@ -20,6 +20,44 @@ namespace LQCDA {
 	virtual double operator() (const std::vector<double>& x, const std::vector<double>& params) const =0;
     };
 
+    class ModelParam
+    {
+    private:
+	double _Val;
+	double _LowerLimit;
+	double _UpperLimit;
+
+	bool _HasLowLimit, _HasUpLimit;
+
+    public:
+	ModelParam() {}
+	ModelParam(double val) :
+	    _Val(val),
+	    _HasLowLimit(0),
+	    _HasUpLimit(0)
+	    {}
+	ModelParam(double val, double lower, double upper) :
+	    _Val(val),
+	    _LowerLimit(lower),
+	    _UpperLimit(upper),
+	    _HasLowLimit(1),
+	    _HasUpLimit(1)
+	    {}
+
+// TODO : add exception throw to deal with bound problems
+	void setValue(double val) {
+	    _Val = val;
+	}
+	void setLowerLimit(double l) {
+	    _LowerLimit = l;
+	    _HasLowLimit = true;
+	}
+	void setUpperLimit(double l) {
+	    _UpperLimit = l;
+	    _HasUpLimit = true;
+	}
+    };
+
     class FitModel
     {
     public:

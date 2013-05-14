@@ -32,36 +32,30 @@ using namespace Minuit2;
 
 namespace LQCDA {
     
-    class FitBase
+    class Fit
     {
     protected:
-	FitModel* _model;
+	FitModel* _Model;
 	
-	bool _isComputed;
+	bool _IsComputed;
 	const double InitError = 0.5;
 	
-	size_t _nFittedParams;
-	std::vector<double> _fittedParams;
-	std::vector<double> _fittedErrors;
+	std::vector<ModelParam> _ModelParams;
+	std::vector<double> _ModelParamsErr;
+
+	std::vector<double> _DumbParams;
+	std::vector<double> _DumbParamsErr;
 
     public:
-	FitBase(FitDataBase* data, FitModel* model)
-	    : _model(model), _isComputed(false),
-	      _nFittedParams(model->nParams())
-	    {
-		for(int k=0; k<data->nxDim(); ++k) {
-		    if(data->is_x_corr(k)) {
-			_nFittedParams += data->nData();
-		    }
-		}
-		_fittedParams.resize(_nFittedParams);
-		_fittedErrors.resize(_nFittedParams);
-	    }
+	Fit(FitModel* model);
+	Fit(FitModel* model, const std::vector<ModelParam>& initPar);
+	Fit(FitModel* model, const std::vector<double>& initPar);
+
+	void setInitModelParams(const std::vector<ModelParam>& initPar);
+	void setInitModelParams(const std::vector<double>& initPar);
 
 	virtual void fit(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits) =0;
 	void fit() { fit(std::vector<double>(_model->nParams()), std::vector<LimitBase*>()); }
-
-	size_t nFittedParams() { return _nFittedParams; }
 
 	double getFittedParameter(unsigned int n);
 	double getFittedError(unsigned int n);
@@ -74,6 +68,9 @@ namespace LQCDA {
 	FunctionMinimum fit_impl(FitDataBase* fitdata, const MnUserParameters& initP, bool scan =false);
 
 	MnUserParameters getMnUserParameters(FitDataBase* fitdata, const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
+
+    private:
+	
     };
 
     // FitBase::fit_impl() member function
