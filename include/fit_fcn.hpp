@@ -45,6 +45,7 @@ namespace LQCDA {
 
 	double getLastValue() const { return last_value; }
 	size_t getDOF() const;
+	
     private:
 	// Compute inverses of covariance matrices
 	void compute_C_inv(FitDataBase* data);

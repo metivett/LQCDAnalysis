@@ -10,7 +10,8 @@
 
 #include <vector>
 #include <string>
-#include "exceptions.hpp"
+#include <assert.h>
+#include "model_parameters.hpp"
 
 namespace LQCDA {
 
@@ -18,78 +19,56 @@ namespace LQCDA {
     {
     public:
 	virtual double operator() (const std::vector<double>& x, const std::vector<double>& params) const =0;
-    };
-
-    class ModelParam
-    {
-    private:
-	double _Val;
-	double _LowerLimit;
-	double _UpperLimit;
-
-	bool _HasLowLimit, _HasUpLimit;
-
-    public:
-	ModelParam() {}
-	ModelParam(double val) :
-	    _Val(val),
-	    _HasLowLimit(0),
-	    _HasUpLimit(0)
-	    {}
-	ModelParam(double val, double lower, double upper) :
-	    _Val(val),
-	    _LowerLimit(lower),
-	    _UpperLimit(upper),
-	    _HasLowLimit(1),
-	    _HasUpLimit(1)
-	    {}
-
-// TODO : add exception throw to deal with bound problems
-	void setValue(double val) {
-	    _Val = val;
-	}
-	void setLowerLimit(double l) {
-	    _LowerLimit = l;
-	    _HasLowLimit = true;
-	}
-	void setUpperLimit(double l) {
-	    _UpperLimit = l;
-	    _HasUpLimit = true;
-	}
+	virtual unsigned int XDim() const =0;
+	virtual unsigned int NbOfParameters() =0;
     };
 
     class FitModel
     {
-    public:
     protected:
-	std::string _m_name;
-	std::vector<ModelFunction*> _m_fcts;
-	size_t _m_nb_params;
-	size_t _m_x_dim, _m_y_dim;
+	std::string _Name;
+	
+	std::vector<ModelFunction*> _ModelFunctions;
+
+	std::vector<std::vector<bool> > _FunctionMasks;
+	
+	size_t _NbOfParameters;
+	size_t _XDim, _YDim;
+	
     public:
-	FitModel(const std::vector<ModelFunction*>& fcts, size_t nparam, size_t xdim, const char* name ="")
-	    : _m_name(name), _m_fcts(fcts), _m_nb_params(nparam), _m_x_dim(xdim), _m_y_dim(fcts.size()) {}
+        FitModel(const std::string& name, const std::vector<ModelFunction*>& fcts, const std::vector<std::vector<bool> >& masks) :
+	    _Name(name),
+	    _ModelFunctions(fcts),
+	    _FunctionMasks(masks),
+	    _NbOfParameters(0),
+	    _XDim(0),
+	    _YDim(fcts.size())
+	{
+	    assert(_FunctionMasks.size() == _YDim);
+            for(int k = 0; k < _YDim; ++k) {
+                _NbOfParameters += _ModelFunctions[k]->NbOfParameters();
+                _XDim = max(_Xdim,_ModelFunctions[k]->XDim());
+            }
+        }
 
-	std::string name() const { return _m_name; }
-	size_t nParams() const { return _m_nb_params; }
-	// TODO
-	std::string getParName(size_t p) const { return (std::string)(""); }
-	size_t xDim() const { return _m_x_dim; }
-	size_t yDim() const { return _m_y_dim; }
+	std::string Name() const { return _Name; }
+	size_t NbOfParameters() const { return _NbOfParameters; }
 
-	double eval(size_t k, const std::vector<double>& x, const std::vector<double>& params) const
+	size_t XDim() const { return _XDim; }
+	size_t YDim() const { return _YDim; }
+
+	double Eval(size_t k, const std::vector<double>& x, const ModelParameters& params) const
 	    {
-		if(k >= _m_y_dim)
-		    throw OutOfRange("FitModel::eval()", k);
-		else return (*_m_fcts[k])(x, params);
+		assert(k < _YDim);
+		else return (*_m_fcts[k])(x, params.ParamValues(_FunctionMasks[k]));
 	    }
-	std::vector<double> eval(const std::vector<double>& x, const std::vector<double>& params) const
+	std::vector<double> Eval(const std::vector<double>& x, const ModelParameters& params) const
 	    {
-		std::vector<double> res(_m_y_dim);
-		for(int i=0; i<_m_y_dim; ++i)
-		    res[i] = (*_m_fcts[i])(x, params);
+		std::vector<double> result(_YDim);
+		for(int k = 0; k < _YDim; ++k)
+		    result[k] = (*_m_fcts[k])(x, params.ParamValues(_FunctionMasks[k]));
 
-		return res;
+		return result;
 	    }
     };
     

@@ -40,22 +40,21 @@ namespace LQCDA {
 	bool _IsComputed;
 	const double InitError = 0.5;
 	
-	std::vector<ModelParam> _ModelParams;
-	std::vector<double> _ModelParamsErr;
-
-	std::vector<double> _DumbParams;
-	std::vector<double> _DumbParamsErr;
+	ModelParameters _ModelParameters;
+	std::vector<FunctionParameter> _DummyParameters;
 
     public:
 	Fit(FitModel* model);
 	Fit(FitModel* model, const std::vector<ModelParam>& initPar);
 	Fit(FitModel* model, const std::vector<double>& initPar);
 
-	void setInitModelParams(const std::vector<ModelParam>& initPar);
-	void setInitModelParams(const std::vector<double>& initPar);
+	void SetInitModelParams(const std::vector<ModelParam>& initPar);
+	void SetInitModelParams(const std::vector<double>& initPar);
 
-	virtual void fit(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits) =0;
-	void fit() { fit(std::vector<double>(_model->nParams()), std::vector<LimitBase*>()); }
+	template<class Fcn>
+	void fit(FitData* data);
+	template<class Fcn, template <typename T> class Resampler>
+	void fit(ResampledFitData<Resampler>* data);
 
 	double getFittedParameter(unsigned int n);
 	double getFittedError(unsigned int n);
@@ -67,7 +66,7 @@ namespace LQCDA {
 	template<class Fcn>
 	FunctionMinimum fit_impl(FitDataBase* fitdata, const MnUserParameters& initP, bool scan =false);
 
-	MnUserParameters getMnUserParameters(FitDataBase* fitdata, const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
+	MnUserParameters getMnUserParameters(FitDataBase* fitdata, const std::vector<ModelParam>& initPar);
 
     private:
 	
@@ -75,7 +74,7 @@ namespace LQCDA {
 
     // FitBase::fit_impl() member function
     template<class Fcn>
-    FunctionMinimum FitBase::fit_impl(FitDataBase* fitdata, const MnUserParameters& init_par, bool scan)
+    FunctionMinimum Fit::fit_impl(FitDataBase* fitdata, const MnUserParameters& init_par, bool scan)
     {
 	Fcn F(fitdata, _model);
 	LQCDDebug(3)<<"\nMinimization function initialized!\n";
@@ -129,13 +128,13 @@ namespace LQCDA {
 	}
     }
 
-    inline MnUserParameters FitBase::getMnUserParameters(FitDataBase* fitdata, const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits)
+    inline MnUserParameters FitBase::getMnUserParameters(FitDataBase* fitdata, const std::vector<ModelParam>& initPar)
     {
-	size_t nParModel = _model->nParams();
+	size_t nParModel = _Model->nParams();
 	int nxDim = fitdata->nxDim();
 	int nyDim = fitdata->nyDim();
 	int nData = fitdata->nData();
-	MnUserParameters init_par;
+	MnUserParameters MnInitPar;
 	
 	if(initPar.size() != nParModel) {
 	    throw OutOfRange("Fit::fit()", nParModel);
@@ -150,14 +149,11 @@ namespace LQCDA {
 		parName = oss.str();
 	    }
 	    // Add parameter p
-	    init_par.Add(parName.c_str(), initPar[p], abs(initPar[p]) * InitError);
+	    MnInitPar.Add(parName.c_str(), initPar[p], abs(initPar[p]) * InitError);
 
 	    // Set optional limits on parameters
-	    if(parLimits.size() == nParModel) {
+	    if(initPar[p].Limit()) {
 		parLimits[p]->apply(init_par, p);
-	    }
-	    else if(parLimits.size() != 0) {
-		throw OutOfRange("Fit::fit()", parLimits.size());
 	    }
 	}
 	

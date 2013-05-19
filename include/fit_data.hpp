@@ -50,6 +50,8 @@ namespace LQCDA {
 	virtual std::vector<double> x(size_t i) const =0;
 	virtual double x(size_t i, size_t k) const =0;
 
+	virtual bool isEnabled(size_t i) const =0;
+	virtual void disablePoint(size_t i) =0;
 	const std::vector<bool>& x_corr() const { return _is_x_corr; }
 	
 	bool is_x_corr(size_t k) const {
@@ -153,7 +155,8 @@ namespace LQCDA {
     private:
 	const std::vector<std::vector<double> >& _data;	// data ("y-points") to be fitted
 	const std::vector<std::vector<double> >& _x;	// "x-points" ie points s.t. we evalutate model(x,params)
-	
+
+	std::vector<bool> _isEnabled;
     public:
 	// TODO
 	FitData(const std::vector<std::vector<double> >& data,
@@ -162,13 +165,13 @@ namespace LQCDA {
 		const Eigen::MatrixXd& C_xx,
 		const Eigen::MatrixXd& C_xy,
 		const std::vector<bool>& x_corr =std::vector<bool>())
-	    : _data(data), _x(x),
+	    : _data(data), _x(x), _isEnabled(data.size(),true),
 	      FitDataBase(C_yy, C_xx, C_xy, x_corr)
 	    {}
 	FitData(const std::vector<std::vector<double> >& data,
 		const std::vector<std::vector<double> >& x,
 		const std::vector<bool>& x_corr =std::vector<bool>())
-	    : _data(data), _x(x),
+	    : _data(data), _x(x), _isEnabled(data.size(),true),
 	      FitDataBase(compute_C_yy(data), compute_C_xx(data, x), compute_C_xy(data, x), x_corr)
 	    {}
 
@@ -183,6 +186,9 @@ namespace LQCDA {
 	double y(size_t i, size_t k) const { return (_data)[i][k]; }
 	std::vector<double> x(size_t i) const { return (_x)[i]; }
 	double x(size_t i, size_t k) const { return (_x)[i][k]; }
+
+	virtual bool isEnabled(size_t i) const { return _isEnabled.at(i); }
+	virtual void disablePoint(size_t i) { _isEnabled[i] = false; }
     };
 
 
@@ -193,11 +199,12 @@ namespace LQCDA {
 	std::vector<RandomVector<Resampler> > _data;	// data ("y-points") to be fitted
 	std::vector<RandomVector<Resampler> > _x;	// "x-points" ie points s.t. we evalutate model(x,params)		
 
+	std::vector<bool> _isEnabled;
     public:
         ResampledFitData(const std::vector<RandomVector<Resampler> >& data,
 			 const std::vector<RandomVector<Resampler> >& x,
 			 const std::vector<bool>& x_corr =std::vector<bool>())
-	    : _data(data), _x(x),
+	    : _data(data), _x(x), _isEnabled(data.size(),true),
 	      ResampledFitDataBase(data[0].nSample(), compute_C_yy(data), compute_C_xx(data, x), compute_C_xy(data, x), x_corr)
 	{}
 
@@ -213,6 +220,9 @@ namespace LQCDA {
 	std::vector<double> x(size_t i) const { return (_x)[i].vector(_currentSample); }
 	double x(size_t i, size_t k) const { return (_x)[i][k].value(_currentSample); }
 
+	virtual bool isEnabled(size_t i) const { return _isEnabled.at(i); }
+	virtual void disablePoint(size_t i) { _isEnabled[i] = false; }
+	
     };
 
 } // namespace LQCDA

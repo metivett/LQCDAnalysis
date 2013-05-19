@@ -1,0 +1,23 @@
+/*
+ * model_parameter_state.hpp
+ *
+ *  Created on: May 17, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef MODEL_PARAMETER_STATE_HPP_
+#define MODEL_PARAMETER_STATE_HPP_
+
+#include "model_parameter.hpp"
+
+namespace LQCDA {
+
+class ModelParameterState
+{
+private:
+
+};
+
+}
+
+#endif	// MODEL_PARAMETER_STATE_HPP_
