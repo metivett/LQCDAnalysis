@@ -21,6 +21,7 @@
 #include "io_sample.hpp"
 #include "io_utils.hpp"
 #include "models.hpp"
+#include "model_parameters.hpp"
 #include "plot.hpp"
 #include "random.hpp"
 #include "random_variable.hpp"

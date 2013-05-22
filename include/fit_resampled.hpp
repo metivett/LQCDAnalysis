@@ -8,80 +8,52 @@
 #ifndef FIT_RESAMPLED_HPP_
 #define FIT_RESAMPLED_HPP_
 
-#include "fit.hpp"
+#include "fit_base.hpp"
+#include "model_parameters.hpp"
 
 namespace LQCDA {
 
     template <class Fcn, template <typename T> class Resampler>
-    class ResampledFit : public FitBase
+    class ResampledFit : public FitBase<Fcn>
     {
-    private:
-        ResampledFitData<Resampler>* _fitdata;
+    protected:
+	using FitBase<Fcn>::_Model;
+	using FitBase<Fcn>::_Data;
+	using FitBase<Fcn>::_IsComputed;
+	using FitBase<Fcn>::_ModelParameters;
 
+	using FitBase<Fcn>::Fit_impl;
+	
     public:
 	ResampledFit(ResampledFitData<Resampler>* data, FitModel* model)
-	    : FitBase(data,model), _fitdata(data)
+	    : FitBase<Fcn>(data,model)
 	    {}
 
-	using FitBase::fit;
-	void fit(const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
-	void fit_sample(unsigned int k,
-			const std::vector<double>& initPar, const std::vector<LimitBase*>& parLimits);
-	void fit_sample(unsigned int k) {
-	    fit_sample(k, std::vector<double>(_model->nParams()), std::vector<LimitBase*>());
-	}
+	virtual void Evaluate();
     };
 
     
-// ResampledFit::fit() member function
+// virtual ResampledFit::Evaluate() member function
     template<class Fcn, template <typename T> class Resampler>
-    void ResampledFit<Fcn,Resampler>::fit(const std::vector<double>& initPar,
-			    const std::vector<LimitBase*>& parLimits)
-    {	
-	// TODO Extend to support several minimizers
+    void ResampledFit<Fcn, Resampler>::Evaluate()
+    {
+	Fcn F(_Data, _Model);
 
-	MnUserParameters init_par = getMnUserParameters(_fitdata, initPar, parLimits);
-	std::vector<std::vector<double> > fittedP(_nFittedParams), fittedE(_nFittedParams);
-	
+	ResampledFitData<Resampler>* data = dynamic_cast<ResampledFitData<Resampler>* > (_Data);
         // Fit each resampled sample
-	for(int sample=0; sample<_fitdata->nSample(); ++sample) {
-	    _fitdata->setCurrentSample(sample);
-	    FunctionMinimum Min = fit_impl<Fcn>(_fitdata, init_par);
-	    
-	    for(int i=0; i<_nFittedParams; ++i) {
-		fittedP[i].push_back(Min.UserParameters().Value(i));
-		fittedE[i].push_back(Min.UserParameters().Error(i));
+//	for(int sample=0; sample<_fitdata->nSample(); ++sample) {
+	for(int sample = 0; sample < 1; ++sample) {
+	    data->setCurrentSample(sample);
+	    std::vector<std::pair<double,double> > Result = Fit_impl(F);
+    
+	    // Get fitted values
+	    for(int i = 0; i < Result.size(); ++i) {
+		_ModelParameters.SetValue(i, Result[i].first);
+		_ModelParameters.SetError(i, Result[i].second);
 	    }
 	}
 
-	// Get fitted values
-	for(int i=0; i<_nFittedParams; ++i) {
-	    _fittedParams[i] = Resampler<double>::mean(fittedP[i]);
-	    _fittedErrors[i] = Resampler<double>::mean(fittedE[i]);
-	}
-	_isComputed = true;
-    }
-
-    // ResampledFit::fit_sample() member function
-    template<class Fcn, template <typename T> class Resampler>
-    void ResampledFit<Fcn,Resampler>::fit_sample(unsigned int k,
-						 const std::vector<double>& initPar,
-						 const std::vector<LimitBase*>& parLimits)
-    {	
-	// TODO Extend to support several minimizers
-
-	MnUserParameters init_par = getMnUserParameters(_fitdata, initPar, parLimits);
-	
-        // Fit sample k
-	_fitdata->setCurrentSample(k);
-	FunctionMinimum Min = fit_impl<Fcn>(_fitdata, init_par);
-
-	// Get fitted values
-	for(int i=0; i<_nFittedParams; ++i) {
-	    _fittedParams[i] = Min.UserParameters().Value(i);
-	    _fittedErrors[i] = Min.UserParameters().Error(i);
-	}
-	_isComputed = true;
+	_IsComputed = true;
     }
 
 } // namespace LQCDA

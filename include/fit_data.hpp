@@ -187,7 +187,7 @@ namespace LQCDA {
 	std::vector<double> x(size_t i) const { return (_x)[i]; }
 	double x(size_t i, size_t k) const { return (_x)[i][k]; }
 
-	virtual bool isEnabled(size_t i) const { return _isEnabled.at(i); }
+	virtual bool isEnabled(size_t i) const { return _isEnabled.[i]; }
 	virtual void disablePoint(size_t i) { _isEnabled[i] = false; }
     };
 

@@ -47,7 +47,7 @@ double Chi2Base::operator() (const std::vector<double>& params) const
 	{
 	    for(int k=0; k<nyDim; ++k)
 	    {
-		Y(k+i*nyDim) = (_m_model->eval(k, x_buf[i], params) - _m_fitdata->y(i,k));
+		Y(k+i*nyDim) = (_m_model->Eval(k, x_buf[i], params) - _m_fitdata->y(i,k));
 	    }
 	}
 	res = X.transpose() * _m_C_inv_xx * X;
@@ -62,7 +62,7 @@ double Chi2Base::operator() (const std::vector<double>& params) const
 	{
 	    for(int k=0; k<nyDim; ++k)
 	    {
-		Y(k+i*nyDim) = (_m_model->eval(k, _m_fitdata->x(i), params) - _m_fitdata->y(i,k));
+		Y(k+i*nyDim) = (_m_model->Eval(k, _m_fitdata->x(i), params) - _m_fitdata->y(i,k));
 	    }
 	}
 	res = Y.transpose() * _m_C_inv_yy * Y;
@@ -75,7 +75,7 @@ double Chi2Base::operator() (const std::vector<double>& params) const
 size_t Chi2Base::getDOF() const
 {
     size_t dof;
-    dof = _m_fitdata->nData() * _m_fitdata->nyDim() - _m_model->nParams();
+    dof = _m_fitdata->nData() * _m_fitdata->nyDim() - _m_model->NbOfParameters();
     return dof;
 }
 

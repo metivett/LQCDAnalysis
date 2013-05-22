@@ -10,6 +10,7 @@
 
 #include "function_parameter.hpp"
 #include <vector>
+#include <ostream>
 
 namespace LQCDA {
 
@@ -21,6 +22,7 @@ namespace LQCDA {
     public:
 	ModelParameters() : _FunctionParameters() {}
 	ModelParameters(size_t nparams);
+	ModelParameters(const std::vector<double>& vals);
 	ModelParameters(const std::vector<double>& vals, const std::vector<double>& errs);
 
 	// Adds new parameter with name, value, error, lower and upper bounds.
@@ -47,6 +49,8 @@ namespace LQCDA {
 	double Error(unsigned int n);
 	
     };
+
+    std::ostream& operator<< (std::ostream& out, const ModelParameters& params);
 
 }
 

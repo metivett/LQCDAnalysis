@@ -4,7 +4,7 @@ LIB_NAME = libLQCDAnalysis.so
 INCLUDES = -I/home/thibaut/workspace/LQCDAnalysis/include -I/home/thibaut/workspace/LQCDAnalysis
 LIBS = -lgsl -lmgl -lMinuit2
 SRC_DIR = ../src
-OBJ_FILES = fit_fcn.o interpolator.o io.o io_correlator.o io_sample.o io_utils.o random.o statistics.o
+OBJ_FILES = fit_fcn.o interpolator.o io.o io_correlator.o io_sample.o io_utils.o model_parameters.o random.o statistics.o
 INSTALL_DIR = /usr/local/lib
 
 all : $(LIB_NAME)
