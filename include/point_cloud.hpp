@@ -15,43 +15,40 @@ namespace LQCDA {
 class Point
 {
 private:
-    std::vector<double> x;
-    std::vector<double> y;
-    std::vector<double> xErr;
-    std::vector<double> yErr;
+    std::vector<double> _X;
+    std::vector<double> _Y;
 
 public:
-    Point(const std::vector<double>& xx, const std::vector<double>& yy)
-	: x(xx), y(yy), xErr(xx.size(),0.), yErr(yy.size(),0.)
+    Point(const std::vector<double>& xx, const std::vector<double>& yy) :
+	_X(xx), _Y(yy)
     {}
 
-    Point(const std::vector<double>& xx, const std::vector<double>& yy,
-	  const std::vector<double>& xxErr, const std::vector<double>& yyErr)
-	: x(xx), y(yy), xErr(xxErr), yErr(yyErr)
-    {}
-
-    std::vector<double> x() { return x; }
-    std::vector<double> y() { return y; }
-    std::vector<double> xErr() { return xErr; }
-    std::vector<double> yErr() { return xErr; }
+    std::vector<double> X() { return _X; }
+    std::vector<double> Y() { return _Y; }
     
-    double x(size_t k);
-    double y(size_t k);
-    double xErr(size_t k);
-    double yErr(size_t k);
+    double X(size_t k);
+    double Y(size_t k);
     
 };
 
 class PointCloud
 {
 private:
-    std::vector<Point> pts;
+    std::vector<Point> _Points;
+
+    // Covariance matrices
+    Eigen::MatrixXd _C_yy;
+    Eigen::MatrixXd _C_xx;
+    Eigen::MatrixXd _C_xy;
 
 public:
-    PointCloud(const std::vector<Point>& points);
+    PointCloud(const std::vector<Point>& points
+	       const Eigen::MatrixXd& C_yy,
+	       const Eigen::MatrixXd& C_xx,
+	       const Eigen::MatrixXd& C_xy);
 
-    size_t nPoints() { return pts.size(); }
-    Point getPoint(size_t n);
+    size_t NbOfPoints() { return _Points.size(); }
+    Point GetPoint(size_t n);
 };
 
 } // namespace LQCDA

@@ -8,52 +8,64 @@
 #ifndef RANDOM_VECTOR_HPP_
 #define RANDOM_VECTOR_HPP_
 
+#include <assert.h>
+#include <memory>
 #include "random_variable.hpp"
-#include "exceptions.hpp"
+#include "resampled.hpp"
 #include "Eigen/Dense"
+#include "io_utils.hpp"
 
 namespace LQCDA {
 
+    template<template <typename T> class Resampler>
+    class ResampledFitData; 
 /*
  * class Random Vector
  * A vector of random variables
  */
     template<template <typename T> class Resampler>
-    class RandomVector : public Resampler<double>
+    class RandomVector : public IsResampled
     {
-    protected:
-	std::vector<RandomVariable<Resampler> > _m_variables; // random variables
-	std::vector<double> _m_mean; // vector of mean values
-	Eigen::MatrixXd _m_var;	// correlated variance
+    private:
+	typedef RandomVariable<Resampler> RandVar;
+	std::vector<RandVar> _RandomVariables; // random variables
 
-	int _nSample;
+	typedef std::shared_ptr<Resampler<double> > ResamplerPtr;
+	ResamplerPtr _Resampler;
 
+	friend class ResampledFitData<Resampler>;
+	
+	RandomVector(const std::vector<std::vector<double> >& variables, const ResamplerPtr& resampler);
     public:
 	// Constructors
-	RandomVector() : _m_variables(), _m_mean(), _m_var() {}
-	RandomVector(const std::vector<RandomVariable<Resampler> >& variables);
+	RandomVector(const std::vector<std::vector<double> >& variables);
+	RandomVector(const RandomVector<Resampler>& v);
+	RandomVector(RandomVector<Resampler>&& v);
+
+	// Destructor
+	~RandomVector();
 
 	// Accessors
-	int size() const { return _m_variables.size(); }
-	int nSample() const { return _nSample; }
-        std::vector<double>  mean() const { return _m_mean; }
-	Eigen::MatrixXd var() const { return _m_var; }
-	std::vector<double> uncorrelated_var() const;
-	const std::vector<RandomVariable<Resampler> >& variables() const { return _m_variables; }
+	int size() const { return _RandomVariables.size(); }
+	virtual unsigned int NSamples() const { return _Resampler->NSamples(); }
+	virtual unsigned int CurrentSample() const { return _Resampler->CurrentSample(); }
 	
-	std::vector<double> vector(size_t k) const; // returns a vector made with value number k of each sample
+	virtual void SetCurrentSample(unsigned int n) { _Resampler->SetCurrentSample(n); }
+        std::vector<double> Mean() const;
+	std::vector<double> Variance() const;
+	const std::vector<RandVar>& RandomVariables() const { return _RandomVariables; }
 
 	// Setters
-	void addVariable(RandomVariable<Resampler> d);
-	void addVariables(const std::vector<RandomVariable<Resampler> >& vals);
+	void AddVariable(const std::vector<double>& v);
 
 	// Operators
+	RandomVector<Resampler>& operator= (const RandomVector<Resampler>& v);
+	RandomVector<Resampler>& operator= (RandomVector<Resampler>&& v);
 	RandomVariable<Resampler>& operator[] (size_t i);
 	const RandomVariable<Resampler>& operator[] (size_t i) const;
-	std::vector<RandomVariable<Resampler> > getCenteredVector() const;
 
-    private:
-	void update(size_t index);
+	explicit operator std::vector<double>() const;
+
     };
 
     
@@ -61,208 +73,216 @@ namespace LQCDA {
  * RandomVector constructor
  */
     template<template <typename T> class Resampler>
-    RandomVector<Resampler>::RandomVector(const std::vector<RandomVariable<Resampler> >& variables)
-    : _m_variables(variables), _m_mean(variables.size()), _m_var(variables.size(), variables.size())
+    RandomVector<Resampler>::RandomVector(const std::vector<std::vector<double> >& variables) :
+	_RandomVariables(),
+	_Resampler(std::make_shared<Resampler<double> >(variables[0].size()))
 {
-    _nSample = variables[0].nSample();
-    int n = variables.size();
-    for(int i=0; i<n; ++i)
-    {
-	if(variables[i].nSample()!=_nSample) {
-	    throw DataException("You're dealing with incompatible resampled data!");
-	}
-	_m_mean[i] = variables[i].mean();
-	_m_var(i,i) = ((variables[i] - variables[i].mean()) * (variables[i] - variables[i].mean())).mean();
-	for(int j=i+1; j<n; ++j)
-	{
-	    _m_var(i,j) = _m_var(j,i) = ((variables[i] - variables[i].mean()) * (variables[j] - variables[j].mean())).mean();
-	}
+    _RandomVariables.reserve(variables.size());
+    for(int i = 0; i < variables.size(); ++i) {
+	_RandomVariables.push_back(RandVar(variables[i], _Resampler));
     }
 }
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>::RandomVector(const std::vector<std::vector<double> >& variables, const ResamplerPtr& resampler) :
+	_RandomVariables(),
+	_Resampler(resampler)
+{
+    _RandomVariables.reserve(variables.size());
+    for(int i = 0; i < variables.size(); ++i) {
+	_RandomVariables.push_back(RandVar(variables[i], _Resampler));
+    }
+}
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>::RandomVector(const RandomVector<Resampler>& v) :
+	_RandomVariables(v._RandomVariables),
+	_Resampler(v._Resampler)
+    {}
 
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>::RandomVector(RandomVector<Resampler>&& v) :
+	_RandomVariables(std::move(v._RandomVariables)),
+	_Resampler(std::move(v._Resampler))
+    {}
+
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>& RandomVector<Resampler>::operator= (const RandomVector<Resampler>& v)
+    {
+	_RandomVariables = v._RandomVariables;
+	_Resampler = v._Resampler;
+	return *this;
+    }
+
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>& RandomVector<Resampler>::operator= (RandomVector<Resampler>&& v)
+    {
+	_RandomVariables = std::move(v._RandomVariables);
+	_Resampler = std::move(v._Resampler);
+	return *this;
+    }
+
+/*
+ * RandomVector destructor
+ */
+    template<template <typename T> class Resampler>
+    RandomVector<Resampler>::~RandomVector()
+    {}
+    
 /*
  * RandomVector utility functions and operators
  */
     template<template <typename T> class Resampler>
-    void RandomVector<Resampler>::update(size_t index) {
-	size_t n = _m_variables.size();
-	_m_mean.resize(n);
-	_m_var.conservativeResize(n,n);
-	for(int i=0; i<index; ++i)
-	{
-	    for(int j=index; j<n; ++j)
-	    {
-		_m_var(i,j) = _m_var(j,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[j] - _m_variables[j].mean())).mean();
-	    }
-	}
-	for(int i=index; i<n; ++i)
-	{
-	    _m_mean[i] = _m_variables[i].mean();
-	    _m_var(i,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[i] - _m_variables[i].mean())).mean();
-	    for(int j=i+1; j<n; ++j)
-	    {
-		_m_var(i,j) = _m_var(j,i) = ((_m_variables[i] - _m_variables[i].mean()) * (_m_variables[j] - _m_variables[j].mean())).mean();
-	    }
-	}
-    }
-
-    template<template <typename T> class Resampler>
-    std::vector<double> RandomVector<Resampler>::uncorrelated_var() const
+    std::vector<double> RandomVector<Resampler>::Mean() const
     {
-	int n = _m_variables.size();
+	int n = _RandomVariables.size();
 	std::vector<double> result(n);
 	for (int i=0; i<n; ++i)
-	    result[i] = _m_variables[i].var();
+	    result[i] = _RandomVariables[i].Mean();
+	return result;
+    }
+    template<template <typename T> class Resampler>
+    std::vector<double> RandomVector<Resampler>::Variance() const
+    {
+	int n = _RandomVariables.size();
+	std::vector<double> result(n);
+	for (int i=0; i<n; ++i)
+	    result[i] = _RandomVariables[i].Variance();
 	return result;
     }
 
     template<template <typename T> class Resampler>
-    std::vector<double> RandomVector<Resampler>::vector(size_t k) const
+    RandomVector<Resampler>::operator std::vector<double>() const
     {
-	if(k<0 || k>=_nSample)
-	    throw OutOfRange("RandomVector::vector", k);
 	std::vector<double> result(size());
-	for(int i=0; i<size(); ++i) {
-	    result[i] = _m_variables[i].value(k);
+	for(int i = 0; i < size(); ++i) {
+	    result[i] = static_cast<double>(_RandomVariables[i]);
 	}
 	return result;
     }
 
     template<template <typename T> class Resampler>
-    void RandomVector<Resampler>::addVariable(RandomVariable<Resampler> d) {
-	size_t curr_ind = _m_variables.size();
-	_m_variables.push_back(d);
-	update(curr_ind);
-    }
-
-    template<template <typename T> class Resampler>
-    void RandomVector<Resampler>::addVariables(const std::vector<RandomVariable<Resampler> >& vals) {
-	size_t curr_ind = _m_variables.size();
-	_m_variables.reserve(curr_ind + vals.size());
-	_m_variables.insert(_m_variables.end(), vals.begin(), vals.end());
-	update(curr_ind);
+    void RandomVector<Resampler>::AddVariable(const std::vector<double>& v) {
+	_RandomVariables.push_back(RandVar(v, _Resampler));
     }
     
     template<template <typename T> class Resampler>
     inline RandomVariable<Resampler>& RandomVector<Resampler>::operator[] (size_t i) {
-	if(i<0 || i>_m_variables.size()-1)
-	    throw OutOfRange("RandomVector", i);
-	return _m_variables[i];
+	return _RandomVariables[i];
     }
     template<template <typename T> class Resampler>
     inline const RandomVariable<Resampler>& RandomVector<Resampler>::operator[] (size_t i) const {
-	if(i<0 || i>_m_variables.size()-1)
-	    throw OutOfRange("RandomVector", i);
-	return _m_variables[i];
-    }
-    template<template <typename T> class Resampler>
-    inline std::vector<RandomVariable<Resampler> > RandomVector<Resampler>::getCenteredVector() const {
-	std::vector<RandomVariable<Resampler> > result = _m_variables;
-	for(int i=0; i<result.size(); ++i) {
-	    result[i] -= _m_mean[i];
-	}
-	return result;
+	return _RandomVariables[i];
     }
 
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator+ (const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
-    { 
-	return RandomVector<Resampler>(x.variables() + y.variables());
+    {
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() + y[i].Sample();
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
-    inline RandomVector<Resampler> operator+ (const RandomVector<Resampler>& x, const std::vector<double>& v)
+    inline RandomVector<Resampler> operator+ (const RandomVector<Resampler>& x, const std::vector<double>& y)
     {
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-	if(v.size() != var.size())
-	    throw DataException("You're adding vectors of different sizes!");
-	for(int i=0; i<var.size(); ++i)
-	    var[i] += v[i];
-	return RandomVector<Resampler>(var);
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() + y[i];
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator+ (const RandomVector<Resampler>& x, double d)
     {
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-	for(int i=0; i<var.size(); ++i)
-	    var[i] += d;
-	return RandomVector<Resampler>(var);
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() + d;
+	}
+	return RandomVector<Resampler>(result);
     }
 
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator- (const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
     { 
-	return RandomVector<Resampler>(x.variables() - y.variables());
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() - y[i].Sample();
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
-    inline RandomVector<Resampler> operator- (const RandomVector<Resampler>& x, const std::vector<double>& v)
+    inline RandomVector<Resampler> operator- (const RandomVector<Resampler>& x, const std::vector<double>& y)
     { 
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-	if(v.size() != var.size())
-	    throw DataException("You're adding vectors of different sizes!");
-	for(int i=0; i<var.size(); ++i)
-	    var[i] -= v[i];
-	return RandomVector<Resampler>(var);
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() - y[i];
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator- (const RandomVector<Resampler>& x, double d)
     { 
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-
-	for(int i=0; i<var.size(); ++i)
-	    var[i] -= d;
-	return RandomVector<Resampler>(var);
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() - d;
+	}
+	return RandomVector<Resampler>(result);
     }
 
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator* (const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
     { 
-	return RandomVector<Resampler>(x.variables() * y.variables());
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() * y[i].Sample();
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
-    inline RandomVector<Resampler> operator* (const RandomVector<Resampler>& x, const std::vector<double>& v)
+    inline RandomVector<Resampler> operator* (const RandomVector<Resampler>& x, const std::vector<double>& y)
     { 
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-	if(v.size() != var.size())
-	    throw DataException("You're adding vectors of different sizes!");
-	for(int i=0; i<var.size(); ++i)
-	    var[i] *= v[i];
-	return RandomVector<Resampler>(var);
+	assert(x.size() == y.size());
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() * y[i];
+	}
+	return RandomVector<Resampler>(result);
     }
     template<template <typename T> class Resampler>
     inline RandomVector<Resampler> operator* (const RandomVector<Resampler>& x, double d)
     { 
-	std::vector<RandomVariable<Resampler> > var = x.variables();
-
-	for(int i=0; i<var.size(); ++i)
-	    var[i] *= d;
-	return RandomVector<Resampler>(var);
+	std::vector<std::vector<double> > result(x.size());
+	for(int i = 0; i < x.size(); ++i) {
+	    result[i] = x[i].Sample() * d;
+	}
+	return RandomVector<Resampler>(result);
     }
 
     template<template <typename T> class Resampler>
-    RandomVariable<Resampler> dotprod (const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
+    RandomVariable<Resampler> Dotprod (const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
     {
-	if(x.size() == 0 || x.size() != y.size())
-	    throw DataException("You're trying to dotproduct random vectors with either null or different sizes !");
+	assert(x.size() == y.size());
 	RandomVariable<Resampler> result = x[0] * y[0];
-	for(int i=1; i<x.size(); ++i)
+	for(int i = 1; i < x.size(); ++i)
 	    result += x[i] * y[i];
 	return result;
     }
 
     template<template <typename T> class Resampler>
-    Eigen::MatrixXd covariance(const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
+    Eigen::MatrixXd Covariance(const RandomVector<Resampler>& x, const RandomVector<Resampler>& y)
     {
-	if(x.size() == 0 || y.size() == 0)
-	    throw DataException("You're trying to compute covariance of random vectors with either null sizes !");
-
 	Eigen::MatrixXd result(x.size(), y.size());
-	std::vector<RandomVariable<Resampler> > X_tilda = x.getCenteredVector();
-	std::vector<RandomVariable<Resampler> > Y_tilda = y.getCenteredVector();
+	std::vector<RandomVariable<Resampler> > X_tilda = (x - x.Mean()).RandomVariables();
+	std::vector<RandomVariable<Resampler> > Y_tilda = (y - y.Mean()).RandomVariables();
     
 	for(int i=0; i<x.size(); ++i)
 	    for(int j=0; j<y.size(); ++j)
-		result(i,j) = (X_tilda[i] * Y_tilda[j]).mean();
-
+		result(i,j) = (X_tilda[i] * Y_tilda[j]).Mean();
 	return result;
     }
     

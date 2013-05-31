@@ -1,0 +1,23 @@
+/*
+ * resampled.hpp
+ *
+ *  Created on: May 23, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#ifndef RESAMPLED_HPP_
+#define RESAMPLED_HPP_
+
+#include <assert.h>
+
+namespace LQCDA {
+
+class IsResampled
+{
+public:
+    virtual ~IsResampled() =0 {}
+};
+
+} // namespace LQCDA
+
+#endif	// RESAMPLED_HPP

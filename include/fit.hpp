@@ -20,6 +20,7 @@ namespace LQCDA {
 	using FitBase<Fcn>::_Data;
 	using FitBase<Fcn>::_IsComputed;
 	using FitBase<Fcn>::_ModelParameters;
+	using FitBase<Fcn>::_DummyParameters;
 
 	using FitBase<Fcn>::Fit_impl;
 	
@@ -46,9 +47,14 @@ namespace LQCDA {
 	std::vector<std::pair<double,double> > Result = Fit_impl(F);
     
 	// Get fitted values
-	for(int i = 0; i < Result.size(); ++i) {
+	unsigned int nmodelpar = _ModelParameters.Size();
+	for(int i = 0; i < nmodelpar; ++i) {
 	    _ModelParameters.SetValue(i, Result[i].first);
 	    _ModelParameters.SetError(i, Result[i].second);
+	}
+	for(int i = _ModelParameters.Size(); i < Result.size(); ++i) {
+	    _DummyParameters.SetValue(i-nmodelpar, Result[i].first);
+	    _DummyParameters.SetError(i-nmodelpar, Result[i].second);
 	}
 	
 	_IsComputed = true;

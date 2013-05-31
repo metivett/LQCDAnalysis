@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <assert.h>
 #include "model_parameters.hpp"
+#include "io_utils.hpp"
 
 namespace LQCDA {
 
@@ -58,19 +59,43 @@ namespace LQCDA {
 	unsigned int XDim() const { return _XDim; }
 	unsigned int YDim() const { return _YDim; }
 
-	double Eval(size_t k, const std::vector<double>& x, const ModelParameters& params) const
-	    {
-		assert(k < _YDim);
-		return (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
+	double Eval(size_t k, const std::vector<double>& x, const ModelParameters& params) const {
+	    assert(k < _YDim);
+	    return (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
+	}
+	double Eval(size_t k, const std::vector<double>& x, const std::vector<double>& params) const {
+	    assert(k < _YDim);
+	    assert(params.size() == _NbOfParameters);
+	    std::vector<double> buf;
+	    buf.reserve(_NbOfParameters);
+	    for(int n = 0; n < _NbOfParameters; ++n) {
+		if(_FunctionMasks[k][n])
+		    buf.push_back(params[n]);
 	    }
-	std::vector<double> Eval(const std::vector<double>& x, const ModelParameters& params) const
-	    {
-		std::vector<double> result(_YDim);
-		for(int k = 0; k < _YDim; ++k)
-		    result[k] = (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
-
-		return result;
+	    
+	    return (*_ModelFunctions[k])(x, buf);
+	}
+	std::vector<double> Eval(const std::vector<double>& x, const ModelParameters& params) const {
+	    std::vector<double> result(_YDim);
+	    for(int k = 0; k < _YDim; ++k)
+		result[k] = (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
+	    
+	    return result;
+	}
+	std::vector<double> Eval(const std::vector<double>& x, const std::vector<double>& params) const {
+	    std::vector<double> result(_YDim);
+	    for(int k = 0; k < _YDim; ++k) {
+		std::vector<double> buf;
+		buf.reserve(_NbOfParameters);
+		for(int n = 0; n < _NbOfParameters; ++n) {
+		    if(_FunctionMasks[k][n])
+			buf.push_back(params[n]);
+		}
+		result[k] = (*_ModelFunctions[k])(x, buf);
 	    }
+	    
+	    return result;
+	}
     };
     
 

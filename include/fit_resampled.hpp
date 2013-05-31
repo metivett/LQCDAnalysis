@@ -21,6 +21,7 @@ namespace LQCDA {
 	using FitBase<Fcn>::_Data;
 	using FitBase<Fcn>::_IsComputed;
 	using FitBase<Fcn>::_ModelParameters;
+	using FitBase<Fcn>::_DummyParameters;
 
 	using FitBase<Fcn>::Fit_impl;
 	
@@ -43,13 +44,18 @@ namespace LQCDA {
         // Fit each resampled sample
 //	for(int sample=0; sample<_fitdata->nSample(); ++sample) {
 	for(int sample = 0; sample < 1; ++sample) {
-	    data->setCurrentSample(sample);
+	    data->SetCurrentSample(sample);
 	    std::vector<std::pair<double,double> > Result = Fit_impl(F);
-    
+
 	    // Get fitted values
-	    for(int i = 0; i < Result.size(); ++i) {
-		_ModelParameters.SetValue(i, Result[i].first);
-		_ModelParameters.SetError(i, Result[i].second);
+	    unsigned int nmodelpar = _ModelParameters.Size();
+	    for(int i = 0; i < nmodelpar; ++i) {
+	    _ModelParameters.SetValue(i, Result[i].first);
+	    _ModelParameters.SetError(i, Result[i].second);
+	    }
+	    for(int i = _ModelParameters.Size(); i < Result.size(); ++i) {
+		_DummyParameters.SetValue(i-nmodelpar, Result[i].first);
+		_DummyParameters.SetError(i-nmodelpar, Result[i].second);
 	    }
 	}
 

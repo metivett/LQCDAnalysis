@@ -158,6 +158,7 @@ fit_fcn.d: ../src/fit_fcn.cpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/src/Eigenvalues/./ComplexSchur.h \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
  /home/thibaut/workspace/LQCDAnalysis/include/statistics.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/resampled.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/models.hpp \
@@ -481,6 +482,8 @@ fit_fcn.d: ../src/fit_fcn.cpp \
 /home/thibaut/workspace/LQCDAnalysis/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h:
 
 /home/thibaut/workspace/LQCDAnalysis/include/statistics.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/resampled.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp:
 

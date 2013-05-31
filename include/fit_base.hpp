@@ -43,6 +43,7 @@ namespace LQCDA {
 	static const double InitError;
 	
 	ModelParameters _ModelParameters;
+	ModelParameters _DummyParameters;
 
     public:
 	FitBase(FitDataBase* data, FitModel* model);
@@ -70,7 +71,7 @@ namespace LQCDA {
 
     
     template<class Fcn>
-    const double FitBase<Fcn>::InitError = 0.5;
+    const double FitBase<Fcn>::InitError = 0.1;
 
 // ----------------------------------------------------------------------
 // Fit constructors and member functions
@@ -178,9 +179,10 @@ namespace LQCDA {
 
 
 
-    inline MnUserParameters getMnUserParameters(FitDataBase* fitdata, const ModelParameters& initParams, int initError)
+    inline MnUserParameters getMnUserParameters(FitDataBase* fitdata, const ModelParameters& initParams, const ModelParameters& dummyParams, int initError)
     {
 	const std::vector<FunctionParameter>& params = initParams.Parameters();
+	const std::vector<FunctionParameter>& dumparams = dummyParams.Parameters();
 	int nxDim = fitdata->nxDim();
 	int nyDim = fitdata->nyDim();
 	int nData = fitdata->nData();
@@ -210,14 +212,27 @@ namespace LQCDA {
 		}
 	    }
 	}
+
+	// Set dummy parameters
+	for(int p=0; p<dumparams.size(); ++p) {
+	    // Add parameter p
+	    if(dumparams[p].Error() == 0.) {
+		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), abs(dumparams[p].Value()) * initError);
+	    }
+	    else {
+		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), dumparams[p].Error());
+	    }
+	    MnInitPar.SetError(p+params.size(), 1.e-6);
+	    MnInitPar.SetLimits(p+params.size(), dumparams[p].Value()-0.1, dumparams[p].Value()+0.1);
+	}
 	
 	// Print some information
 	LQCDDebug(1)<<"\nFit dimensions :\n"
 		    <<"nxDim = "<<nxDim<<'\n'
 		    <<"nyDim = "<<nyDim<<'\n'
 		    <<"nData = "<<nData<<'\n';
-	LQCDDebug(1)<<"\nX-corr = "<<fitdata->have_x_corr()<<'\n';
-	
+	LQCDDebug(1)<<"\nHaveXCorrelation = "<<fitdata->HaveXCorrelation()<<'\n';
+
 	// Return MnInitPar
 	return MnInitPar;
     }
@@ -228,11 +243,13 @@ namespace LQCDA {
     {
 	LQCDDebug(3)<<"\nMinimization function initialized!\n";
 
-	MnUserParameters init_par = getMnUserParameters(_Data, _ModelParameters, FitBase<Fcn>::InitError);
+	MnUserParameters init_par = getMnUserParameters(_Data, _ModelParameters, _DummyParameters, FitBase<Fcn>::InitError);
+	LQCDOut<<"Init par : "<<'\n'<<init_par;
 	
 	// Pre-minimizer call
-	MnMigrad Migrad1(F, init_par, 0);
+	MnMigrad Migrad1(F, init_par, 2);
 	FunctionMinimum Min = Migrad1();
+	
 	LQCDDebug(3)<<"(MINUIT) Pre-minimizer call :\n"
 		    << "--------------------------------------------------------"
 		    << Min
@@ -241,7 +258,7 @@ namespace LQCDA {
 	
 	// Minimizer call
 	MnUserParameters pre_min_par = Min.UserParameters();
-	MnMigrad Migrad2(F, pre_min_par, 2);
+	MnMigrad Migrad2(F, pre_min_par, 1);
 	Min = Migrad2();
 
 	if(!Min.IsValid()) {
@@ -294,13 +311,13 @@ namespace LQCDA {
 	int nData = data->nData();
 	// Add "pseudo-parameters" to deal with cases of x-correlation in dimension k
 	for(int k=0; k<nxDim; ++k) {
-	    if(data->is_x_corr(k)) {
+	    if(data->IsCorrelatedXDim(k)) {
 		for(int i=0; i<nData; ++i) {
 		    // Name for parameter x_ik
 		    std::ostringstream oss;
 		    oss<<"x"<<i<<k;
 		    // Add parameter p
-		    _ModelParameters.Add(oss.str(), data->x(i,k), abs(data->x(i,k)) * FitBase<Fcn>::InitError);
+		    _DummyParameters.Add(oss.str(), data->x(i,k), abs(data->x(i,k)) * FitBase<Fcn>::InitError*0.0001);
 		}
 	    }
 	}

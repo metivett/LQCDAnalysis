@@ -33,7 +33,7 @@ namespace LQCDA {
     inline typename InputIterator::value_type mean (InputIterator first, InputIterator last)
     {
 	typename InputIterator::value_type result = *first++;
-	int n(0);
+	int n(1);
 	for (; first != last; ++first) {
 	    result = result + *first;
 	    n++;

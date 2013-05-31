@@ -44,6 +44,18 @@ namespace LQCDA {
  */
     extern std::ostream LQCDOut;   // standard output
     extern VerbosityFilteredOutStream LQCDDebug; // debugging output
+
+/*
+ * LQCDA output operators
+ */
+    template<class T>
+    std::ostream& operator<< (std::ostream& out, const std::vector<T>& v)
+    {
+	for(int i = 0; i < v.size(); ++i) {
+	    out << v[i] << std::endl;
+	}
+	return out;
+    }
     
 /*
  * Enumeration to deal with several IO formats (or versions)

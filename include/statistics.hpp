@@ -47,7 +47,7 @@ namespace LQCDA {
 	return mean(x*y);
     }
     template<typename T>
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> covariance (const std::vector<T>& x, const std::vector<T>& y)
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Covariance (const std::vector<T>& x, const std::vector<T>& y)
     {    
 	if(&x == &y)
 	    return Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Identity(x.size(),x.size());
@@ -55,7 +55,7 @@ namespace LQCDA {
 	    return Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(x.size(),y.size());
     }
     template<typename Scalar, int Rows, int Cols>
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> covariance(
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Covariance(
 	const std::vector<Eigen::Array<Scalar, Rows, Cols> >& v,
 	const std::vector<Eigen::Array<Scalar, Rows, Cols> >& w) {
 	int n = v.size();

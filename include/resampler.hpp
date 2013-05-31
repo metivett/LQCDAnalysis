@@ -10,7 +10,6 @@
 
 #include "random.hpp"
 #include "utils.hpp"
-#include "exceptions.hpp"
 #include "statistics.hpp"
 #include <vector>
 
@@ -22,18 +21,55 @@ namespace LQCDA {
  * with a given sample along with its bootstrapped values
  */
     template<class T>
-    class BootstrapResampler
+    class ResamplerBase
+    {
+    private:
+	unsigned int _NSamples;
+	unsigned int _CurrentSample;
+
+    public:
+	ResamplerBase(unsigned int nsamples) :
+	    _NSamples(nsamples),
+	    _CurrentSample(0)
+	    {}
+
+	unsigned int NSamples() const { return _NSamples; }
+	unsigned int CurrentSample() const { return _CurrentSample; }
+	void SetCurrentSample(unsigned int n) {
+	    assert(n < _NSamples);
+	    _CurrentSample = n;
+	}
+
+	T Mean(const std::vector<T>& sample) const { return DoMean(sample); }
+	T Variance(const std::vector<T>& sample) const { return DoVariance(sample); }
+	
+    private:
+	virtual T DoMean(const std::vector<T>& sample) const =0;
+	virtual T DoVariance(const std::vector<T>& sample) const =0;
+	
+    };
+    
+    template<class T>
+    class BootstrapResampler : public ResamplerBase<T>
     {
     public:
-	static T mean(const std::vector<T>& sample)
+	BootstrapResampler(unsigned int nsamples) :
+	    ResamplerBase<T>(nsamples)
+	    {}
+	
+    private:
+	virtual T DoMean(const std::vector<T>& sample) const
 	    {
+		assert(sample.size() == this->NSamples());
 		return LQCDA::mean(sample);
 	    }
-	static T variance(const std::vector<T>& sample)
+	virtual T DoVariance(const std::vector<T>& sample) const
 	    {
+		assert(sample.size() == this->NSamples());
 		return LQCDA::SampleVariance(sample);
 	    }
     };
+    
     template<class T>
     class NoResampling
     {

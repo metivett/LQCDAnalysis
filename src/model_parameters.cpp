@@ -173,6 +173,11 @@ double ModelParameters::Error(unsigned int n)
     return _FunctionParameters[n].Error();
 }
 
+unsigned int ModelParameters::Size() const
+{
+    return _FunctionParameters.size();
+}
+
 std::ostream& LQCDA::operator<< (std::ostream& out, const ModelParameters& params)
 {
     const std::vector<FunctionParameter>& parameters = params.Parameters();
@@ -186,3 +191,4 @@ std::ostream& LQCDA::operator<< (std::ostream& out, const ModelParameters& param
     }
     return out;
 }
+

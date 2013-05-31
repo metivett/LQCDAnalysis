@@ -75,6 +75,18 @@ namespace LQCDA {
 	std::string _msg;
     };
 
+    class BadPointException
+    {
+    private:
+	int _Index;
+	
+    public:
+	BadPointException() : _Index(-1) {}
+	BadPointException(int index) : _Index(index) {}
+
+	int Index() { return _Index; }
+    };
+
 } // namespace LQCDA
 
 #endif /* EXCEPTIONS_HPP_ */

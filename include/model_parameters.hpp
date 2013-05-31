@@ -47,6 +47,8 @@ namespace LQCDA {
 	
 	double Value(unsigned int n);
 	double Error(unsigned int n);
+
+	unsigned int Size() const;
 	
     };
 
