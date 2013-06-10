@@ -163,7 +163,9 @@ fit_fcn.d: ../src/fit_fcn.cpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/models.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/model_parameters.hpp \
- /home/thibaut/workspace/LQCDAnalysis/include/function_parameter.hpp
+ /home/thibaut/workspace/LQCDAnalysis/include/function_parameter.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/fit_base.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/fit_utils.hpp
 
 /home/thibaut/workspace/LQCDAnalysis/include/fit_fcn.hpp:
 
@@ -494,3 +496,7 @@ fit_fcn.d: ../src/fit_fcn.cpp \
 /home/thibaut/workspace/LQCDAnalysis/include/model_parameters.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/function_parameter.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/fit_base.hpp:
+
+/home/thibaut/workspace/LQCDAnalysis/include/fit_utils.hpp:
