@@ -45,8 +45,8 @@ namespace LQCDA {
 	
 	const std::vector<FunctionParameter>& Parameters() const;
 	
-	double Value(unsigned int n);
-	double Error(unsigned int n);
+	double Value(unsigned int n) const;
+	double Error(unsigned int n) const;
 
 	unsigned int Size() const;
 	

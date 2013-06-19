@@ -47,9 +47,9 @@ namespace LQCDA {
 	virtual int nyDim() const =0;
 	virtual int ySize() const =0;
 
-	virtual Eigen::MatrixXd C_yy() =0;
-	virtual Eigen::MatrixXd C_xx() =0;
-	virtual Eigen::MatrixXd C_xy() =0;
+	virtual Eigen::MatrixXd C_yy(unsigned int i, unsigned int j) =0;
+	virtual Eigen::MatrixXd C_xx(unsigned int i, unsigned int j) =0;
+	virtual Eigen::MatrixXd C_xy(unsigned int i, unsigned int j) =0;
 
 	virtual std::vector<double> y(size_t i) const =0;
 	virtual double y(size_t i, size_t k) const =0;
@@ -58,6 +58,7 @@ namespace LQCDA {
 
 	virtual void DisablePoint(unsigned int i) =0;
 	virtual void EnablePoint(unsigned int i) =0;
+	virtual void EnableAllPoints() =0;
 	
 	bool IsCorrelatedXDim(size_t k) const {
 	    return _IsCorrelatedXDim[k];
@@ -70,11 +71,11 @@ namespace LQCDA {
 	}
 
 	template <class V>
-	Eigen::MatrixXd compute_C_xx(const std::vector<V>& data, const std::vector<V>& x);
+	static Eigen::MatrixXd ComputeCxx(const std::vector<V>& data, const std::vector<V>& x);
 	template <class V>
-	Eigen::MatrixXd compute_C_yy(const std::vector<V>& data);
+	static Eigen::MatrixXd ComputeCyy(const std::vector<V>& data);
 	template <class V>
-	Eigen::MatrixXd compute_C_xy(const std::vector<V>& data, const std::vector<V>& x);	
+	static Eigen::MatrixXd ComputeCxy(const std::vector<V>& data, const std::vector<V>& x);	
     };
 
     
@@ -82,7 +83,7 @@ namespace LQCDA {
 // FitDataBase utility functions
 //-----------------------------------------------------------
     template <class V>
-    Eigen::MatrixXd FitDataBase::compute_C_xx(const std::vector<V>& data, const std::vector<V>& x)
+    Eigen::MatrixXd FitDataBase::ComputeCxx(const std::vector<V>& data, const std::vector<V>& x)
     {
 	int nData = data.size();
 	int nxDim = x[0].size();
@@ -96,7 +97,7 @@ namespace LQCDA {
 	return C_xx;
     }
     template <class V>
-    Eigen::MatrixXd FitDataBase::compute_C_yy(const std::vector<V>& data)
+    Eigen::MatrixXd FitDataBase::ComputeCyy(const std::vector<V>& data)
     {
 	int nData = data.size();
 	int nyDim = data[0].size();
@@ -110,7 +111,7 @@ namespace LQCDA {
 	return C_yy;
     }
     template <class V>
-    Eigen::MatrixXd FitDataBase::compute_C_xy(const std::vector<V>& data, const std::vector<V>& x)
+    Eigen::MatrixXd FitDataBase::ComputeCxy(const std::vector<V>& data, const std::vector<V>& x)
     {
 	int nData = data.size();
 	int nxDim = x[0].size();
@@ -134,16 +135,26 @@ namespace LQCDA {
 	
 	std::vector<unsigned int> _EnabledPointsIndexes;
 
+	Eigen::MatrixXd _CovYY;
+	Eigen::MatrixXd _CovXX;
+	Eigen::MatrixXd _CovXY;
+	bool _UpToDateCov;
+
     public:
 	FitDataBaseT(const std::vector<bool>& x_corr) :
-	    FitDataBase(x_corr)
+	    FitDataBase(x_corr),
+	    _UpToDateCov(true)
 	    {}
 	FitDataBaseT(const std::vector<DataT>& data,
 		     const std::vector<XT>& x,
 		     const std::vector<bool>& x_corr) :
 	    FitDataBase(x_corr),
 	    _Data(data), _X(x),
-	    _EnabledPointsIndexes(data.size())
+	    _EnabledPointsIndexes(data.size()),
+	    _CovYY(FitDataBase::ComputeCyy(data)),
+	    _CovXX(FitDataBase::ComputeCxx(data, x)),
+	    _CovXY(FitDataBase::ComputeCxy(data, x)),
+	    _UpToDateCov(true)
 	    {
 		for(int i = 0; i < data.size(); ++i)
 		    _EnabledPointsIndexes[i] = i;
@@ -165,10 +176,11 @@ namespace LQCDA {
 	std::vector<double> x(size_t i) const { return static_cast<std::vector<double> >(_X[_EnabledPointsIndexes[i]]); }
 	double x(size_t i, size_t k) const { return static_cast<double>(_X[_EnabledPointsIndexes[i]][k]); }
 
-	void Add(DataT data, XT x) {
+	void Add(const DataT& data, const XT& x) {
 	    _Data.push_back(data);
 	    _X.push_back(x);
 	    _EnabledPointsIndexes.push_back(_Data.size() - 1);
+	    _UpToDateCov = false;
 	}
 
 	void Reserve(size_t n) {
@@ -185,36 +197,67 @@ namespace LQCDA {
 	    assert(i < _Data.size());
 	    _EnabledPointsIndexes.insert(std::find_if(_EnabledPointsIndexes.begin(), _EnabledPointsIndexes.end(), std::bind2nd(std::less<int>(), i)), i);
 	}
-
-	Eigen::MatrixXd C_yy() {
-	    Eigen::MatrixXd C_yy(nyDim()*nData(),nyDim()*nData());
-	    for(int i=0; i<nData(); ++i) {
-		for(int j=0; j<nData(); ++j) {
-		    C_yy.block(i * nyDim(), j * nyDim(), nyDim(), nyDim()) = Covariance(_Data[_EnabledPointsIndexes[i]],_Data[_EnabledPointsIndexes[j]]);
-		}
-	    }
-	
-	    return C_yy;
+	virtual void EnableAllPoints() {
+	    _EnabledPointsIndexes.resize(_Data.size());
+	    for(int i = 0; i < _Data.size(); ++i)
+		_EnabledPointsIndexes[i] = i;
 	}
-	Eigen::MatrixXd C_xx() {
-	    Eigen::MatrixXd C_xx(nxDim()*nData(),nxDim()*nData());
-	    for(int i=0; i<nData(); ++i) {
-		for(int j=0; j<nData(); ++j) {
-		    C_xx.block(i * nxDim(), j * nxDim(), nxDim(), nxDim()) = Covariance(_X[_EnabledPointsIndexes[i]],_X[_EnabledPointsIndexes[j]]);
-		}
-	    }
 
-	    return C_xx;
-	}	
-	Eigen::MatrixXd C_xy() {
-	    Eigen::MatrixXd C_xy(nxDim()*nData(),nyDim()*nData());
-	    for(int i=0; i<nData(); ++i) {
-		for(int j=0; j<nData(); ++j) {
-		    C_xy.block(i * nxDim(), j * nyDim(), nxDim(), nyDim()) = Covariance(_X[_EnabledPointsIndexes[i]],_Data[_EnabledPointsIndexes[j]]);
-		}
+	// Eigen::MatrixXd C_yy() const {
+	//     Eigen::MatrixXd C_yy(nyDim()*nData(),nyDim()*nData());
+	//     for(int i=0; i<nData(); ++i) {
+	// 	for(int j=0; j<nData(); ++j) {
+	// 	    C_yy.block(i * nyDim(), j * nyDim(), nyDim(), nyDim()) = Covariance(_Data[_EnabledPointsIndexes[i]],_Data[_EnabledPointsIndexes[j]]);
+	// 	}
+	//     }
+	
+	//     return C_yy;
+	// }
+	Eigen::MatrixXd C_yy(unsigned int i, unsigned int j) {
+	    if(!_UpToDateCov) {
+		UpdateCovariance();
 	    }
+	    return _CovYY.block(_EnabledPointsIndexes[i]*nyDim(), _EnabledPointsIndexes[j]*nyDim(), nyDim(), nyDim());
+	}
+	// Eigen::MatrixXd C_xx() const {
+	//     Eigen::MatrixXd C_xx(nxDim()*nData(),nxDim()*nData());
+	//     for(int i=0; i<nData(); ++i) {
+	// 	for(int j=0; j<nData(); ++j) {
+	// 	    C_xx.block(i * nxDim(), j * nxDim(), nxDim(), nxDim()) = Covariance(_X[_EnabledPointsIndexes[i]],_X[_EnabledPointsIndexes[j]]);
+	// 	}
+	//     }
 
-	    return C_xy;
+	//     return C_xx;
+	// }
+	Eigen::MatrixXd C_xx(unsigned int i, unsigned int j) {
+	    if(!_UpToDateCov) {
+		UpdateCovariance();
+	    }
+	    return _CovXX.block(_EnabledPointsIndexes[i]*nxDim(), _EnabledPointsIndexes[j]*nxDim(), nxDim(), nxDim());
+	}
+	// Eigen::MatrixXd C_xy() const {
+	//     Eigen::MatrixXd C_xy(nxDim()*nData(),nyDim()*nData());
+	//     for(int i=0; i<nData(); ++i) {
+	// 	for(int j=0; j<nData(); ++j) {
+	// 	    C_xy.block(i * nxDim(), j * nyDim(), nxDim(), nyDim()) = Covariance(_X[_EnabledPointsIndexes[i]],_Data[_EnabledPointsIndexes[j]]);
+	// 	}
+	//     }
+
+	//     return C_xy;
+	// }
+	Eigen::MatrixXd C_xy(unsigned int i, unsigned int j) {
+	    if(!_UpToDateCov) {
+		UpdateCovariance();
+	    }
+	    return _CovXY.block(_EnabledPointsIndexes[i]*nxDim(), _EnabledPointsIndexes[j]*nyDim(), nxDim(), nyDim());
+	}
+
+    private:
+	void UpdateCovariance() {
+	    _CovYY = FitDataBase::ComputeCyy(_Data);
+	    _CovXX = FitDataBase::ComputeCxx(_Data, _X);
+	    _CovXY = FitDataBase::ComputeCxy(_Data, _X);
+	    _UpToDateCov = true;
 	}
     };
     
@@ -223,9 +266,11 @@ namespace LQCDA {
     {
     private:
 	typedef FitDataBaseT<std::vector<double>, std::vector<double> > Base;
-	
+	using Base::Add;
     public:
-	// TODO
+	FitData(const std::vector<bool>& x_corr) :
+	    Base(x_corr)
+	    {}
 	FitData(const std::vector<std::vector<double> >& data,
 		const std::vector<std::vector<double> >& x,
 		const std::vector<bool>& x_corr) :
@@ -236,6 +281,9 @@ namespace LQCDA {
 	    Base(data, x)
 	    {}
 
+	void Add(const std::vector<bool>& data, const std::vector<bool>& x) {
+	    Add(data, x);
+	}
     };
 
 
@@ -246,11 +294,16 @@ namespace LQCDA {
     private:
 	typedef RandomVector<Resampler> RandVec;
 	typedef FitDataBaseT<RandVec, RandVec> Base;
+	using Base::Add;
 
 	typedef std::shared_ptr<Resampler<double> > ResamplerPtr;
 	ResamplerPtr _Resampler;
 
     public:
+	ResampledFitData(const std::vector<bool>& x_corr) :
+	    Base(x_corr),
+	    _Resampler(0)
+	    {}
         ResampledFitData(const std::vector<std::vector<std::vector<double> > >& data,
 			 const std::vector<std::vector<std::vector<double> > >& x,
 			 const std::vector<bool>& x_corr) :
@@ -273,6 +326,14 @@ namespace LQCDA {
 		}
 	    }
 
+	void Add(const std::vector<std::vector<double> >& data,
+		 const std::vector<std::vector<double> >& x) {
+	    if(!_Resampler)
+		_Resampler = std::make_shared<Resampler<double> >(data[0].size());
+
+	    Add(RandVec(data, _Resampler), RandVec(x, _Resampler));
+	}
+	
 	virtual unsigned int NSamples() const { return _Resampler->NSamples(); }
 	virtual unsigned int CurrentSample() const { return _Resampler->CurrentSample(); }
 	virtual void SetCurrentSample(unsigned int n) { _Resampler->SetCurrentSample(n); }

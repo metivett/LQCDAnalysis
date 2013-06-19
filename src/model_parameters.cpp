@@ -162,12 +162,12 @@ const std::vector<FunctionParameter>& ModelParameters::Parameters() const
     return _FunctionParameters;
 }
 
-double ModelParameters::Value(unsigned int n)
+double ModelParameters::Value(unsigned int n) const
 {
     assert(n < _FunctionParameters.size());
     return _FunctionParameters[n].Value();
 }
-double ModelParameters::Error(unsigned int n)
+double ModelParameters::Error(unsigned int n) const
 {
     assert(n < _FunctionParameters.size());
     return _FunctionParameters[n].Error();

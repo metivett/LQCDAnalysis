@@ -1,0 +1,49 @@
+/*
+ * Minuit2Minimizer.cpp
+ *
+ *  Created on: Jun 10, 2013
+ *      Author: Thibaut Metivet
+ */
+
+#include "Minuit2Minimizer.hpp"
+
+
+MnUserParameters LQCDA::Mn2Minimizer::GetMnUserParameters(const ModelParameters& params)
+{
+    const std::vector<FunctionParameter>& par = initParams.Parameters();
+    MnUserParameters MnPar;
+
+    for(int p=0; p<par.size(); ++p) {
+	// Add parameter p
+	if(par[p].Error() == 0.) {
+	    double error = abs(par[p].Value()) * initError;
+	    MnPar.Add(par[p].Name(), par[p].Value(), error);
+	    MnPar.SetError(p, error);
+	}
+	else {
+	    double error = par[p].Error();
+	    MnPar.Add(par[p].Name(), par[p].Value(),error);
+	    MnPar.SetError(p, error);
+	}
+	    
+	// Set optional limits on parameters
+	if(par[p].HasLimits()) {
+	    if(par[p].HasLowerLimit()) {
+		if(par[p].HasUpperLimit()) {
+		    MnPar.SetLimits(p, par[p].LowerLimit(), par[p].UpperLimit());
+		}
+		else {
+		    MnPar.SetLowerLimit(p, par[p].LowerLimit());
+		}
+	    }
+	    else {
+		MnPar.SetUpperLimit(p, par[p].UpperLimit());
+	    }
+	}
+    }
+}
+
+ModelParameters LQCDA::Mn2Minimizer::GetModelParameters(const MnUserParameters& params)
+{
+    
+}

@@ -10,6 +10,8 @@
 
 #include "fit_data.hpp"
 #include "models.hpp"
+#include "fit_base.hpp"
+#include "models.hpp"
 #include "Minuit2/FCNBase.h"
 #include "Eigen/Dense"
 #include "io_utils.hpp"
@@ -28,23 +30,23 @@ namespace LQCDA {
     class Chi2Base : public FCNBase
     {
     protected:
-	FitDataBase* _m_fitdata;	// data to be fitted
-	FitModel* _m_model;		// model used for the fit
+	FitDataBase* _FitData;	// data to be fitted
+	FitModel* _FitModel;		// model used for the fit
 
 	Eigen::MatrixXd _m_C_inv_yy, _m_C_inv_xx, _m_C_inv_xy; // Inverse blocks of the covariance matrix
 	
     public:
-	Chi2Base(FitDataBase* data, FitModel* model)
-	    : _m_fitdata(data), _m_model(model)
+	Chi2Base(FitDataBase* data, FitModel* model) :
+	    _FitData(data), _FitModel(model)
 	    {
-		compute_C_inv(data);
+		compute_C_inv(_FitData);
 	    }
 
 	virtual double Up () const { return 1.0; }
 	virtual double operator() (const std::vector<double>& params) const;
 
-	double getLastValue() const { return last_value; }
-	size_t getDOF() const;
+	double LastValue() const { return last_value; }
+	double DOF() const;
 	
     private:
 	// Compute inverses of covariance matrices

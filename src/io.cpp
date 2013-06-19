@@ -7,6 +7,7 @@
 
 #include "io.hpp"
 #include "exceptions.hpp"
+#include <limits>
 
 namespace LQCDA
 {
@@ -71,6 +72,13 @@ namespace LQCDA
     {
 	std::istream& is = getIstream();
 	getline(is, output);
+	return !is.fail();
+    }
+
+    bool Reader::skipLine()
+    {
+	std::istream& is = getIstream();
+	is.ignore(std::numeric_limits<int>::max(), '\n');
 	return !is.fail();
     }
 

@@ -13,17 +13,18 @@
 
 namespace LQCDA {
 
-class IsResampled
-{
-private:
+    class IsResampled
+    {
+    private:
     
-public:    
-    virtual ~IsResampled() =0;
+    public:    
+	virtual ~IsResampled() =0;
 
-    virtual unsigned int NSamples() const =0;
-    virtual unsigned int CurrentSample() const =0;
-    virtual void SetCurrentSample(unsigned int n) =0;
-};
+	virtual unsigned int NSamples() const =0;
+	virtual unsigned int CurrentSample() const =0;
+	virtual void SetCurrentSample(unsigned int n) =0;
+	
+    };
 
     inline IsResampled::~IsResampled()
     {}

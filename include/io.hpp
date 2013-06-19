@@ -41,6 +41,7 @@ namespace LQCDA {
 	virtual void read(bool& result);
 
 	virtual bool readLine (std::string& output);
+	virtual bool skipLine();
 
     protected:
 	template<typename T>

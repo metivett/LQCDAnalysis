@@ -18,6 +18,7 @@
 #include "Minuit2/FunctionMinimum.h"
 #include "Minuit2/MnPrint.h"
 #include "Minuit2/MnMigrad.h"
+#include "Minuit2/MnSimplex.h"
 #include "Minuit2/MnScan.h"
 #include "Minuit2/ScanMinimizer.h"
 #include "Minuit2/MnPlot.h"
@@ -54,10 +55,18 @@ namespace LQCDA {
 	void SetInitialModelParams(const std::vector<double>& initPar, const std::vector<double>& initErr);
 
 	virtual void Evaluate() =0;
+	
+	template<class Plotter>
+	void Plot(unsigned int yk, unsigned int xk);
 
 	double GetFittedParameter(unsigned int n);
 	double GetFittedError(unsigned int n);
 	std::vector<double> GetPointToModelDistances();
+
+	const FitDataBase* GetFitData() const;
+	const FitModel* GetFitModel() const;
+
+	unsigned int NbOfParameters() const;
 	
 	virtual void PrintParameters();
 
@@ -118,6 +127,14 @@ namespace LQCDA {
 	_IsComputed = false;
     }
 
+    template<class Fcn>
+    template<class Plotter>
+    void FitBase<Fcn>::Plot(unsigned int yk, unsigned int xk)
+    {
+	Plotter plot;
+	plot.Plot();
+    }
+
 
     template<class Fcn>
     double FitBase<Fcn>::GetFittedParameter(unsigned int n)
@@ -165,6 +182,23 @@ namespace LQCDA {
     }
 
     template<class Fcn>
+    const FitDataBase* FitBase<Fcn>::GetFitData() const
+    {
+	return _Data;
+    }
+    template<class Fcn>
+    const FitModel* FitBase<Fcn>::GetFitModel() const
+    {
+	return _Model;
+    }
+
+    template<class Fcn>
+    unsigned int FitBase<Fcn>::NbOfParameters() const
+    {
+	return _ModelParameters.Size() + _DummyParameters.Size();
+    }
+
+    template<class Fcn>
     void FitBase<Fcn>::PrintParameters()
     {
 	if(_IsComputed) {
@@ -179,7 +213,7 @@ namespace LQCDA {
 
 
 
-    inline MnUserParameters getMnUserParameters(FitDataBase* fitdata, const ModelParameters& initParams, const ModelParameters& dummyParams, int initError)
+    inline MnUserParameters getMnUserParameters(FitDataBase* fitdata, const ModelParameters& initParams, const ModelParameters& dummyParams, double initError)
     {
 	const std::vector<FunctionParameter>& params = initParams.Parameters();
 	const std::vector<FunctionParameter>& dumparams = dummyParams.Parameters();
@@ -191,10 +225,14 @@ namespace LQCDA {
 	for(int p=0; p<params.size(); ++p) {
 	    // Add parameter p
 	    if(params[p].Error() == 0.) {
-		MnInitPar.Add(params[p].Name(), params[p].Value(), abs(params[p].Value()) * initError);
+		double error = abs(params[p].Value()) * initError;
+		MnInitPar.Add(params[p].Name(), params[p].Value(), error);
+		MnInitPar.SetError(p, error);
 	    }
 	    else {
-		MnInitPar.Add(params[p].Name(), params[p].Value(), params[p].Error());
+		double error = params[p].Error();
+		MnInitPar.Add(params[p].Name(), params[p].Value(),error);
+		MnInitPar.SetError(p, error);
 	    }
 	    
 	    // Set optional limits on parameters
@@ -217,13 +255,17 @@ namespace LQCDA {
 	for(int p=0; p<dumparams.size(); ++p) {
 	    // Add parameter p
 	    if(dumparams[p].Error() == 0.) {
-		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), abs(dumparams[p].Value()) * initError);
+		double error = abs(dumparams[p].Value()) * initError;
+		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), error);
+		MnInitPar.SetError(p+params.size(), error);
+		MnInitPar.SetLimits(p+params.size(), dumparams[p].Value() - error, dumparams[p].Value() + error);
 	    }
 	    else {
-		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), dumparams[p].Error());
+		double error = dumparams[p].Error();
+		MnInitPar.Add(dumparams[p].Name(), dumparams[p].Value(), error);
+		MnInitPar.SetError(p+params.size(), error);
+		MnInitPar.SetLimits(p+params.size(), dumparams[p].Value() - error, dumparams[p].Value() + error);
 	    }
-	    MnInitPar.SetError(p+params.size(), 1.e-6);
-	    MnInitPar.SetLimits(p+params.size(), dumparams[p].Value()-0.1, dumparams[p].Value()+0.1);
 	}
 	
 	// Print some information
@@ -244,7 +286,7 @@ namespace LQCDA {
 	LQCDDebug(3)<<"\nMinimization function initialized!\n";
 
 	MnUserParameters init_par = getMnUserParameters(_Data, _ModelParameters, _DummyParameters, FitBase<Fcn>::InitError);
-	LQCDOut<<"Init par : "<<'\n'<<init_par;
+	LQCDOut<<"Initial parameters : "<<'\n'<<init_par;
 	
 	// Pre-minimizer call
 	MnMigrad Migrad1(F, init_par, 2);
@@ -258,7 +300,7 @@ namespace LQCDA {
 	
 	// Minimizer call
 	MnUserParameters pre_min_par = Min.UserParameters();
-	MnMigrad Migrad2(F, pre_min_par, 1);
+	MnMigrad Migrad2(F, pre_min_par, 2);
 	Min = Migrad2();
 
 	if(!Min.IsValid()) {

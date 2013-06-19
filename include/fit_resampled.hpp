@@ -26,9 +26,12 @@ namespace LQCDA {
 	using FitBase<Fcn>::Fit_impl;
 	
     public:
-	ResampledFit(ResampledFitData<Resampler>* data, FitModel* model)
-	    : FitBase<Fcn>(data,model)
-	    {}
+	ResampledFit(ResampledFitData<Resampler>* data, FitModel* model) :
+	    FitBase<Fcn>(data,model) {}
+	ResampledFit(ResampledFitData<Resampler>* data, FitModel* model, const std::vector<double>& initParams) :
+	    FitBase<Fcn>(data, model, initParams) {}
+	ResampledFit(ResampledFitData<Resampler>* data, FitModel* model, const std::vector<double>& initParams, const std::vector<double>& initErrors) :
+	    FitBase<Fcn>(data, model, initParams, initErrors) {}
 
 	virtual void Evaluate();
     };

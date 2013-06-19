@@ -63,16 +63,16 @@ namespace LQCDA {
 	    throw DataException("You're adding vectors of different sizes!");
 	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] += w[i];
+	    result[i] = result[i] + w[i];
 	return result;
     }
-    template<typename T>
-    std::vector<T> operator+ (const std::vector<T>& v, const T& t)
+    template<typename Ty, class Alloc, typename T>
+    std::vector<Ty, Alloc> operator+ (const std::vector<Ty, Alloc>& v, const T& t)
     {
 	int n = v.size();
-	std::vector<T> result(v);
+	std::vector<Ty, Alloc> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] += t;
+	    result[i] = result[i] + t;
 	return result;
     }
     template<typename T>
@@ -83,16 +83,16 @@ namespace LQCDA {
 	    throw DataException("You're substracting vectors of different sizes!");
 	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] -= w[i];
+	    result[i] = result[i] - w[i];
 	return result;
     }
-    template<typename T>
-    std::vector<T> operator- (const std::vector<T>& v, const T& t)
+    template<typename Ty, class Alloc, typename T>
+    std::vector<Ty> operator- (const std::vector<Ty, Alloc>& v, const T& t)
     {
 	int n = v.size();
-	std::vector<T> result(v);
+	std::vector<Ty, Alloc> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] -= t;
+	    result[i] = result[i] - t;
 	return result;
     }
     template<typename T>
@@ -103,16 +103,36 @@ namespace LQCDA {
 	    throw DataException("You're multiplying vectors of different sizes!");
 	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] *= w[i];
+	    result[i] = result[i] * w[i];
+	return result;
+    }
+    template<typename Ty, class Alloc, typename T>
+    std::vector<Ty, Alloc> operator* (const std::vector<Ty, Alloc>& v, const T& t)
+    {
+	int n = v.size();
+	std::vector<Ty, Alloc> result(v);
+	for(int i=0; i<n; ++i)
+	    result[i] = result[i] * t;
 	return result;
     }
     template<typename T>
-    std::vector<T> operator* (const std::vector<T>& v, const T& t)
+    std::vector<T> operator/ (const std::vector<T>& v, const std::vector<T>& w)
     {
 	int n = v.size();
+	if(w.size() != n)
+	    throw DataException("You're multiplying vectors of different sizes!");
 	std::vector<T> result(v);
 	for(int i=0; i<n; ++i)
-	    result[i] *= t;
+	    result[i] = result[i] / w[i];
+	return result;
+    }
+    template<typename Ty, class Alloc, typename T>
+    std::vector<Ty, Alloc> operator/ (const std::vector<Ty, Alloc>& v, const T& t)
+    {
+	int n = v.size();
+	std::vector<Ty, Alloc> result(v);
+	for(int i=0; i<n; ++i)
+	    result[i] = result[i] / t;
 	return result;
     }
 
