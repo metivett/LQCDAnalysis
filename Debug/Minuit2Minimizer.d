@@ -1,7 +1,7 @@
 Minuit2Minimizer.d: ../src/Minuit2Minimizer.cpp \
  /home/thibaut/workspace/LQCDAnalysis/include/Minuit2Minimizer.hpp \
- /home/thibaut/workspace/LQCDAnalysis/include/model_parameters.hpp \
- /home/thibaut/workspace/LQCDAnalysis/include/function_parameter.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/ModelParameters.hpp \
+ /home/thibaut/workspace/LQCDAnalysis/include/FunctionParameter.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp \
  /home/thibaut/workspace/LQCDAnalysis/include/io.hpp \
  /home/thibaut/workspace/LQCDAnalysis/Eigen/Dense \
@@ -158,9 +158,9 @@ Minuit2Minimizer.d: ../src/Minuit2Minimizer.cpp \
 
 /home/thibaut/workspace/LQCDAnalysis/include/Minuit2Minimizer.hpp:
 
-/home/thibaut/workspace/LQCDAnalysis/include/model_parameters.hpp:
+/home/thibaut/workspace/LQCDAnalysis/include/ModelParameters.hpp:
 
-/home/thibaut/workspace/LQCDAnalysis/include/function_parameter.hpp:
+/home/thibaut/workspace/LQCDAnalysis/include/FunctionParameter.hpp:
 
 /home/thibaut/workspace/LQCDAnalysis/include/io_utils.hpp:
 

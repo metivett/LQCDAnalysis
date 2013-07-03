@@ -8,7 +8,7 @@
 #ifndef MINUIT2_MINIMIZER_HPP_
 #define MINUIT2_MINIMIZER_HPP_
 
-#include "model_parameters.hpp"
+#include "ModelParameters.hpp"
 #include "io_utils.hpp"
 #include "exceptions.hpp"
 #include "Minuit2/FunctionMinimum.h"
@@ -39,7 +39,7 @@ namespace LQCDA {
 	    MnUserParameters initPar = GetMnUserParameters(params);
 	
 	    // Pre-minimizer call
-	    MnMigrad Migrad1(F, initPar, 0);
+	    MnMigrad Migrad1(F, initPar, 2);
 	    FunctionMinimum Min = Migrad1();
 	
 	    LQCDDebug(3)<<"(MINUIT) Pre-minimizer call :\n"

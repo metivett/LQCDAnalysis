@@ -13,19 +13,6 @@
 
 namespace LQCDA {
     
-    /*   // CHECK
-    template<typename T, typename Function>
-    std::vector<typename Function::return_type> resample(const std::vector<T>& dat,
-							 Resampler<T> sampler, unsigned int n_resample, Function f) {
-	std::vector<typename Function::return_type> result(n_resample+1);
-	result[0] = f(dat);
-	for(int i=1; i<n_resample+1; ++i)
-	    result[i] = f(sampler.resample(dat));
-
-	return result;
-	}*/
-
-    
 /*
  * Statistical functions to deal with samples of vectors
  */

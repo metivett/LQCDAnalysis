@@ -8,23 +8,27 @@
 #ifndef FIT_RESULT_HPP_
 #define FIT_RESULT_HPP_
 
-#include "fit_data.hpp"
-#include "models.hpp"
-#include "model_parameters.hpp"
+#include "FitData.hpp"
+#include "FitModel.hpp"
+#include "ModelParameters.hpp"
 #include "io.hpp"
 
 namespace LQCDA {
 
+    template<class DataT, class XT>
     class FitResult
     {
     private:
-	FitModel* _Model;
-	FitDataBase* _Data;
+	typedef FitDataA<DataT, XT> Data;
+	typedef FitModel<DataT, XT> Model;
+	
+	Model* _Model;
+	Data* _Data;
 
 	ModelParameters _FitParameters;
 
     public:
-	FitResult(FitDataBase* data, FitModel* model, const ModelParameters& par) :
+	FitResult(Data* data, Model* model, const ModelParameters& par) :
 	    _Model(model),
 	    _Data(data),
 	    _FitParameters(par) {}
@@ -32,7 +36,14 @@ namespace LQCDA {
 	const ModelParameters& FittedParameters() const { return _FitParameters; }
     };
 
-    std::ostream& operator<< (std::ostream& out, const FitResult& res);
+    template<class DataT, class XT>
+    std::ostream& operator<< (std::ostream& out, const FitResult<DataT, XT>& res) {
+	out << "\nFitted parameters:\n";
+	out << res.FittedParameters()
+	    << '\n';
+	
+	return out;
+    }
 
 } // namespace LQCDA
 

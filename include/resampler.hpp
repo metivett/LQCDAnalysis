@@ -40,12 +40,12 @@ namespace LQCDA {
 	    _CurrentSample = n;
 	}
 
-	T Mean(const std::vector<T>& sample) const { return DoMean(sample); }
-	T Variance(const std::vector<T>& sample) const { return DoVariance(sample); }
+	// T Mean(const std::vector<T>& sample) const { return DoMean(sample); }
+	// T Variance(const std::vector<T>& sample) const { return DoVariance(sample); }
 	
-    private:
-	virtual T DoMean(const std::vector<T>& sample) const =0;
-	virtual T DoVariance(const std::vector<T>& sample) const =0;
+    // private:
+    // 	virtual T DoMean(const std::vector<T>& sample) const =0;
+    // 	virtual T DoVariance(const std::vector<T>& sample) const =0;
 	
     };
     
@@ -56,18 +56,16 @@ namespace LQCDA {
 	BootstrapResampler(unsigned int nsamples) :
 	    ResamplerBase<T>(nsamples)
 	    {}
-	
-    private:
-	virtual T DoMean(const std::vector<T>& sample) const
-	    {
-		assert(sample.size() == this->NSamples());
-		return LQCDA::mean(sample);
-	    }
-	virtual T DoVariance(const std::vector<T>& sample) const
-	    {
-		assert(sample.size() == this->NSamples());
-		return LQCDA::SampleVariance(sample);
-	    }
+
+	template<class U>
+	static U Mean(const std::vector<U>& sample) {
+	    return LQCDA::mean(sample);
+	}
+	template<class V>
+	static V Variance(const std::vector<V>& sample) {
+	    return LQCDA::SampleVariance(sample);
+	}
+       
     };
     
     template<class T>
