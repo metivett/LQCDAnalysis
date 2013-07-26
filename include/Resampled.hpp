@@ -31,13 +31,13 @@ namespace LQCDA {
     {}
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     class Resampled
     {
     private:
 	std::vector<T> _Sample;
 
-	typedef std::shared_ptr<Resampler<T> > ResamplerPtr;
+	typedef std::shared_ptr<Resampler> ResamplerPtr;
 	ResamplerPtr _Resampler;
 
     public:
@@ -46,7 +46,7 @@ namespace LQCDA {
     public:
 	Resampled(const std::vector<T>& s) :
 	    _Sample(s),
-	    _Resampler(std::make_shared<Resampler<T> >(s.size()))
+	    _Resampler(std::make_shared<Resampler>(s.size()))
 	    {}
 
 	// Accessors
@@ -54,8 +54,8 @@ namespace LQCDA {
 	T& Value(unsigned int n) { return _Sample[n]; }
 	const T& Value(unsigned int n) const { return _Sample[n]; }
 	const std::vector<T>& Sample() const { return _Sample; }
-	T Mean() const { return _Resampler->Mean(_Sample); }
-	T Variance() const { return _Resampler->Variance(_Sample); }
+	T Mean() const { return Resampler::Mean(_Sample); }
+	T Variance() const { return Resampler::Variance(_Sample); }
 
 	// Operators
         Resampled<T, Resampler>& operator= (const Resampled<T, Resampler>& v);
@@ -69,7 +69,7 @@ namespace LQCDA {
     };
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     Resampled<T, Resampler>& Resampled<T, Resampler>::operator= (const Resampled<T, Resampler>& v)
     {
 	_Sample = v._Sample;
@@ -78,7 +78,7 @@ namespace LQCDA {
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     Resampled<T, Resampler>& Resampled<T, Resampler>::operator= (Resampled<T, Resampler>&& v)
     {
 	_Sample = std::move(v._Sample);
@@ -90,79 +90,79 @@ namespace LQCDA {
  * RandomVariable utility functions and operators
  */    
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator+= (const Resampled<T, Resampler>& y) {
 	_Sample = _Sample + y._Sample;
 	return *this;
     }
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator+= (double d) {
 	_Sample = _Sample + d;
 	return *this;
     }
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator-= (const Resampled<T, Resampler>& y) {
 	_Sample = _Sample - y._Sample;
 	return *this;
     }
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator-= (double d) {
 	_Sample = _Sample - d;
 	return *this;
     }
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator*= (const Resampled<T, Resampler>& y) {
 	_Sample = _Sample * y._Sample;
 	return *this;
     }
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler>& Resampled<T, Resampler>::operator*= (double d) {
 	_Sample = _Sample * d;
 	return *this;
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator+ (const Resampled<T, Resampler>& x, const Resampled<T, Resampler>& y)
     { 
 	return Resampled<T, Resampler>(x.Sample() + y.Sample());
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator+ (const Resampled<T, Resampler>& x, double d)
     {
 	return Resampled<T, Resampler>(x.Sample() + d);
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator- (const Resampled<T, Resampler>& x, const Resampled<T, Resampler>& y)
     { 
 	return Resampled<T, Resampler>(x.Sample() - y.Sample());
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator- (const Resampled<T, Resampler>& x, double d)
     {
 	return Resampled<T, Resampler>(x.Sample() - d);
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator* (const Resampled<T, Resampler>& x, const Resampled<T, Resampler>& y)
     { 
 	return Resampled<T, Resampler>(x.Sample() * y.Sample());
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     inline Resampled<T, Resampler> operator* (const Resampled<T, Resampler>& x, double d)
     {
 	return Resampled<T, Resampler>(x.Sample() * d);

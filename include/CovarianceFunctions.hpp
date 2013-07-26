@@ -55,14 +55,14 @@ namespace LQCDA {
     }
 
     template<class U, class V,
-	     template<class> class Resampler>
+	     class Resampler>
     Eigen::MatrixXd Covariance(const Resampled<U, Resampler>& x, const Resampled<V, Resampler>& y)
     {
 	unsigned int n = SizeInfo(x);
 	unsigned int m = SizeInfo(y);
 
-	std::vector<U> xtilda = x.Sample() - Resampler<U>::Mean(x.Sample());
-	std::vector<V> ytilda = y.Sample() - Resampler<V>::Mean(y.Sample());
+	std::vector<U> xtilda = x.Sample() - Resampler::Mean(x.Sample());
+	std::vector<V> ytilda = y.Sample() - Resampler::Mean(y.Sample());
 
 	Eigen::MatrixXd res = CovProd(xtilda[0], ytilda[0]);
 	

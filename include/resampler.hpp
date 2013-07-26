@@ -20,7 +20,6 @@ namespace LQCDA {
  * A resampled sample stores the central value of a statistical quantity computed
  * with a given sample along with its bootstrapped values
  */
-    template<class T>
     class ResamplerBase
     {
     private:
@@ -49,12 +48,11 @@ namespace LQCDA {
 	
     };
     
-    template<class T>
-    class BootstrapResampler : public ResamplerBase<T>
+    class BootstrapResampler : public ResamplerBase
     {
     public:
 	BootstrapResampler(unsigned int nsamples) :
-	    ResamplerBase<T>(nsamples)
+	    ResamplerBase(nsamples)
 	    {}
 
 	template<class U>

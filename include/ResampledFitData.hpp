@@ -14,7 +14,7 @@
 
 namespace LQCDA {
 
-    template<template <typename T> class Resampler,
+    template<class Resampler,
 	     class DataT, class XT,
 	     template<class, class> class YYCovariancePolicy,
 	     template<class, class> class XXCovariancePolicy,

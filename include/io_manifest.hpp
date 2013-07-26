@@ -40,7 +40,7 @@ namespace LQCDA {
 	while(readLine(sample)) {
 	    path p(sample);
 	    if(p.is_absolute())
-		f((_ParentPath / p.filename()).native());
+		f(p.native());
 	    else
 		f((_ParentPath / p).native());
 	}

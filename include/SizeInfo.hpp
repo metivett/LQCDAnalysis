@@ -29,7 +29,7 @@ namespace LQCDA {
     }
 
     template<class T,
-	     template<class> class Resampler>
+	     class Resampler>
     unsigned int SizeInfo(const Resampled<T, Resampler>& t) {
 	return SizeInfo(t.Value(0));
     }

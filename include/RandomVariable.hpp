@@ -18,7 +18,7 @@
 
 namespace LQCDA {
 
-    template<template <typename T> class Resampler>
+    template<class Resampler>
     using RandomVariable = Resampled<double, Resampler>;
     
 /*

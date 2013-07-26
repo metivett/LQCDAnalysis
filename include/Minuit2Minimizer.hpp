@@ -55,10 +55,10 @@ namespace LQCDA {
 
 	    if(!Min.IsValid()) {
 		LQCDOut<<"Minuit Library reported that minimization result is not valid !\n";
-		throw MinimizationException();
+		return GetModelParameters(Min.UserParameters());
 	    }
 	    else {
-		LQCDDebug(1)<< "(MINUIT) Fit successful !\n"
+		LQCDDebug(2)<< "(MINUIT) Fit successful !\n"
 			    << "Resulting minimum is : "
 			    << F
 			    << std::endl;
@@ -81,7 +81,7 @@ namespace LQCDA {
 	    MnUserParameters initPar = GetMnUserParameters(params);
 	
 	    // Pre-minimizer call
-	    MnSimplex Migrad1(F, initPar, 0);
+	    MnSimplex Migrad1(F, initPar, 2);
 	    FunctionMinimum Min = Migrad1();
 	
 	    LQCDDebug(3)<<"(MINUIT) Pre-minimizer call :\n"
@@ -97,7 +97,7 @@ namespace LQCDA {
 
 	    if(!Min.IsValid()) {
 		LQCDOut<<"Minuit Library reported that minimization result is not valid !\n";
-		throw MinimizationException();
+		return GetModelParameters(Min.UserParameters());
 	    }
 	    else {
 		LQCDDebug(1)<< "(MINUIT) Fit successful !\n"
