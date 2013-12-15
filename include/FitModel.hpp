@@ -5,99 +5,66 @@
  *      Author: Thibaut Metivet
  */
 
-#ifndef MODELS_HPP_
-#define MODELS_HPP_
+#ifndef FITMODEL_HPP
+#define FITMODEL_HPP
 
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <assert.h>
-#include "ModelParameters.hpp"
-#include "io_utils.hpp"
+#include "TypeTraits.hpp"
+#include "MetaProgUtils.hpp"
+#include <array>
 
 namespace LQCDA {
 
-    class ModelFunction
-    {
-    public:
-	virtual double operator() (const std::vector<double>& x, const std::vector<double>& params) const =0;
-	virtual unsigned int XDim() const =0;
-	virtual unsigned int NbOfParameters() const =0;
-    };
-
-    template<class DataT, class XT>
+    template<class XT, class YT>
     class FitModel
     {
-	/*protected:	
-	std::vector<ModelFunction*> _ModelFunctions;
+    public:
+		typedef YT y_type;
+		typedef std::remove_reference<XT>::type x_type;
 
-	std::vector<std::vector<bool> > _FunctionMasks;
-	
-	unsigned int _NbOfParameters;
-	unsigned int _XDim, _YDim;*/
+		virtual y_type operator() (XT x) const =0;
+		virtual unsigned int NParams() const =0;
+
+    };
+
+    template<class XT, class YT, unsigned int NPar>
+    class StaticCustomFitModel: public FitModel<XT,YT>
+    {
+    protected:
+    	std::array<double, NPar> _Parameters;
 
     public:
-	typedef DataT data_type;
-	typedef XT x_type;
-	
+    	StaticCustomFitModel(): _Parameters{} { _Parameters.fill(0.); }
+    	StaticCustomFitModel(double p[NPar]): _Parameters{} { for(int i=0; i<NPar; i++) _Parameters[i] = p[i]; }
+    	StaticCustomFitModel(std::initializer_list<double> p): _Parameters{p} { std::assert(p.size()==NPar); }
+
+    	virtual unsigned int NParams() const { return NPar; }
+
+    	const std::array<double, NPar>& GetParameters() const { return _Parameters; }
+    	std::vector<double> GetParameters() const { return std::vector<double>(_Parameters, _Parameters+NPar); }
+    	double GetParameter(unsigned int i) const { std::assert(i<NPar); return _Parameters[i]; }
+
+    	void SetParameters(double p[NPar]) { for(int i=0; i<NPar; i++) _Parameters[i] = p[i]; }
+    	void SetParameters(const std::array<double, NPar>& p) { _Parameters = p; }
+    	void SetParameters(const std::vector<double>& p) { std::assert(p.size()==NPar); for(int i=0; i<NPar; i++) _Parameters[i] = p[i]; }
+    	void SetParameter(unsigned int i, double p) { std::assert(i<NPar); _Parameters[i] = p; }
+    };
+
+    template<class XT, class YT, typename... ARGS>
+    class FunctionFitModel: public StaticCustomFitModel<XT, YT, sizeof...(ARGS)>
+    {
+    private:
+    	y_type (*_Function)(XT, ARGS...);
+
     public:
-        /*FitModel(const std::string& name, const std::vector<ModelFunction*>& fcts, const std::vector<std::vector<bool> >& masks) :
-	    _Name(name),
-	    _ModelFunctions(fcts),
-	    _FunctionMasks(masks),
-	    _NbOfParameters(0),
-	    _XDim(0),
-	    _YDim(fcts.size())
-	{
-	    assert(_FunctionMasks.size() == _YDim);
-            for(int k = 0; k < _YDim; ++k) {
-                _NbOfParameters += _ModelFunctions[k]->NbOfParameters();
-                _XDim = std::max(_XDim,_ModelFunctions[k]->XDim());
-            }
-	    }*/
+    	FunctionFitModel(YT (*f)(XT, ARGS...)) : _Function(f), StaticCustomFitModel()
+    	{
+    		std::static_assert(are_floating_points<ARGS...>::value, 
+    			"The parameters of the fit model function must be floating-point.");
+    	}
 
-	virtual DataT operator() (const XT& x, const std::vector<double>& params) const =0;
-	virtual unsigned int NbOfParameters() const =0;
-	virtual unsigned int XDim() const =0;
-	virtual unsigned int YDim() const =0;
-
-	/*double Eval(size_t k, const std::vector<double>& x, const ModelParameters& params) const {
-	    assert(k < _YDim);
-	    return (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
-	}
-	double Eval(size_t k, const std::vector<double>& x, const std::vector<double>& params) const {
-	    assert(k < _YDim);
-	    assert(params.size() == _NbOfParameters);
-	    std::vector<double> buf;
-	    buf.reserve(_NbOfParameters);
-	    for(int n = 0; n < _NbOfParameters; ++n) {
-		if(_FunctionMasks[k][n])
-		    buf.push_back(params[n]);
-	    }
-	    
-	    return (*_ModelFunctions[k])(x, buf);
-	}
-	std::vector<double> Eval(const std::vector<double>& x, const ModelParameters& params) const {
-	    std::vector<double> result(_YDim);
-	    for(int k = 0; k < _YDim; ++k)
-		result[k] = (*_ModelFunctions[k])(x, params.ParamValues(_FunctionMasks[k]));
-	    
-	    return result;
-	}
-	std::vector<double> Eval(const std::vector<double>& x, const std::vector<double>& params) const {
-	    std::vector<double> result(_YDim);
-	    for(int k = 0; k < _YDim; ++k) {
-		std::vector<double> buf;
-		buf.reserve(_NbOfParameters);
-		for(int n = 0; n < _NbOfParameters; ++n) {
-		    if(_FunctionMasks[k][n])
-			buf.push_back(params[n]);
-		}
-		result[k] = (*_ModelFunctions[k])(x, buf);
-	    }
-	    
-	    return result;
-	    }*/
+    	virtual y_type operator() (XT x) const {
+    		return apply_(index_bind<1>(_Function, x), _Parameters);
+    	}
     };
     
 

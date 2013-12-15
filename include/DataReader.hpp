@@ -26,8 +26,8 @@ namespace LQCDA {
 	}
     };
 
-template<class T>
-class DataReader<std::complex<T> >
+    template<class T>
+    class DataReader<std::complex<T> >
     {
     public:
 	static std::complex<T> Read(Reader* r) {

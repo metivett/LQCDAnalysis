@@ -57,7 +57,7 @@ namespace LQCDA {
     {
     private:
 	std::vector<DataT> _Data; // data ("y-points") to be fitted
-	std::vector<XT> _X; // "x-points" ie points s.t. we evalutate model(x,params)
+	std::vector<XT> _X; // "x-points" ie points s.t. we evaluate model(x,params)
 
 	std::vector<unsigned int> _EnabledPointsIndexes;
 
