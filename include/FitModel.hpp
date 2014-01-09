@@ -27,15 +27,15 @@ namespace LQCDA {
     };
 
     template<class XT, class YT, unsigned int NPar>
-    class StaticCustomFitModel: public FitModel<XT,YT>
+    class StaticFitModel: public FitModel<XT,YT>
     {
     protected:
     	std::array<double, NPar> _Parameters;
 
     public:
-    	StaticCustomFitModel(): _Parameters{} { _Parameters.fill(0.); }
-    	StaticCustomFitModel(double p[NPar]): _Parameters{} { for(int i=0; i<NPar; i++) _Parameters[i] = p[i]; }
-    	StaticCustomFitModel(std::initializer_list<double> p): _Parameters{p} { std::assert(p.size()==NPar); }
+    	StaticFitModel(): _Parameters{} { _Parameters.fill(0.); }
+    	StaticFitModel(double p[NPar]): _Parameters{} { for(int i=0; i<NPar; i++) _Parameters[i] = p[i]; }
+    	StaticFitModel(std::initializer_list<double> p): _Parameters{p} { std::assert(p.size()==NPar); }
 
     	virtual unsigned int NParams() const { return NPar; }
 
@@ -50,13 +50,13 @@ namespace LQCDA {
     };
 
     template<class XT, class YT, typename... ARGS>
-    class FunctionFitModel: public StaticCustomFitModel<XT, YT, sizeof...(ARGS)>
+    class FunctionFitModel: public StaticFitModel<XT, YT, sizeof...(ARGS)>
     {
     private:
     	y_type (*_Function)(XT, ARGS...);
 
     public:
-    	FunctionFitModel(YT (*f)(XT, ARGS...)) : _Function(f), StaticCustomFitModel()
+    	FunctionFitModel(YT (*f)(XT, ARGS...)) : _Function(f), StaticFitModel()
     	{
     		std::static_assert(are_floating_points<ARGS...>::value, 
     			"The parameters of the fit model function must be floating-point.");

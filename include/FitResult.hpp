@@ -15,17 +15,17 @@
 
 namespace LQCDA {
 
-    template<class DataT, class XT>
+    template<class XT, class YT>
     class FitResult
     {
     private:
-	typedef FitDataA<DataT, XT> Data;
-	typedef FitModel<DataT, XT> Model;
-	
-	Model* _Model;
-	Data* _Data;
+		typedef FitData<XT, YT> Data;
+		typedef FitModel<XT, YT> Model;
+		
+		Model* _Model;
+		Data* _Data;
 
-	ModelParameters _FitParameters;
+		ModelParameters _FitParameters;
 
     public:
 	FitResult(Data* data, Model* model, const ModelParameters& par) :

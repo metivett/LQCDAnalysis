@@ -8,7 +8,7 @@
 #ifndef FITTER_HPP_
 #define FITTER_HPP_
 
-#include "ModelParameters.hpp"
+#include "ModelParameter.hpp"
 #include "FitResult.hpp"
 #include "FitData.hpp"
 #include "FitModel.hpp"
@@ -16,27 +16,66 @@
 #include <type_traits>
 
 namespace LQCDA {
+
+	template<class XT, class YT>
+	class Fitter
+	{
+	private:
+		typedef FitData<XT, YT> Data;
+		typedef FitModel<XT, YT> Model;
+
+		Model * _Model;
+		std::vector<ModelParameter> _ModelParams;
+
+	public:
+		Fitter(FitModel<XT, YT>* model): _Model(model), _ModelParams() {
+			_ModelParams.reserve(_Model->NParams());
+			for(int n = 0; n < _Model->NParams(); ++n) {
+				std::ostringstream oss;
+				oss<<"p"<<n;
+				_ModelParams.push_back(ModelParameter(n, oss.str()));
+			}
+		}
+
+		unsigned int NParams() const { return _Model->NParams(); }
+
+		void SetInitParamValue(unsigned int i, double p) {
+			std::assert(i < NParams());
+			_ModelParams[i].SetValue(p);
+		}
+		void SetInitParamError(unsigned int i, double e) {
+			std::assert(i < NParams());
+			_ModelParams[i].SetError(e);
+		}
+		void SetParamLimits(unsigned int i, double low, double up) {
+			std::assert(i < NParams());
+			_ModelParams[i].SetLimits(low, up);
+		}
+		void RemoveParamLimits(unsigned int i) {
+			std::assert(i < NParams());
+			_ModelParams[i].RemoveLimits();
+		}
+		void SetParamLowerLimit(unsigned int i, double low) {
+			std::assert(i < NParams());
+			_ModelParams[i].SetLowerLimit(low);
+		}
+		void SetParamUpperLimit(unsigned int i, double up) {
+			std::assert(i < NParams());
+			_ModelParams[i].SetUpperLimit(up);
+		}
+
+		FitResult Fit(const FitData<XT, YT> * data) const { return DoFit(data); }
+
+	private:
+		virtual FitResult DoFit(const FitData<XT, YT> * data) =0;
+
+	};
     
-    namespace {
-	template<class DataT, class XT>
-	using Data = FitDataA<DataT, XT>;
-
-	template<class DataT, class XT>
-	using Model = FitModel<DataT, XT>;
-
-	template<class DataT, class XT>
-	using Result = FitResult<DataT, XT>;
-
-	template<bool B, typename T>
-	using Enable_if = typename std::enable_if<B,T>::type;
-    }
-
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    class Fitter
+    template<class XT, class YT, class Minimizer>
+    class Chi2Fitter: public Fitter<XT, YT>
     {
     private:
-	static const double InitError;
+		static const double InitError;
 
 	template<class DataT, class XT>
 	static Enable_if<std::is_floating_point<XT>::value, void> SetDummyParameters(ModelParameters& p, Data<DataT, XT>* data);
@@ -51,12 +90,15 @@ namespace LQCDA {
 	static ModelParameters GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors);
 
     public:
-	template<class DataT, class XT>
-	static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model);
-	template<class DataT, class XT>
-	static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams);
-	template<class DataT, class XT>
-	static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors);
+		template<class DataT, class XT>
+		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model);
+		template<class DataT, class XT>
+		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams);
+		template<class DataT, class XT>
+		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors);
+
+	private:
+		FitResult DoFit();
 
     };
 
