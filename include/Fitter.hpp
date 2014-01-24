@@ -8,233 +8,125 @@
 #ifndef FITTER_HPP_
 #define FITTER_HPP_
 
-#include "ModelParameter.hpp"
-#include "FitResult.hpp"
-#include "FitData.hpp"
-#include "FitModel.hpp"
-#include <cmath>
-#include <type_traits>
+ #include "Globals.hpp"
+ #include "Fit.hpp"
+ #include "FitPolicy.hpp"
+ #include "Minimizer.hpp"
+ #include "Minuit2Minimizer.hpp"
 
-namespace LQCDA {
+ namespace LQCDA {
 
-	template<class XT, class YT>
-	class Fitter
-	{
-	private:
-		typedef FitData<XT, YT> Data;
-		typedef FitModel<XT, YT> Model;
+ 	template<
+ 	typename T, int XDIM, int YDIM, int NPAR,
+ 	template<typename, int, int, unsigned int> class FitPolicy,
+ 	template<typename> class Minimizer
+ 	>
+ 	class Fitter
+ 	: public FitPolicy<T, XDIM, YDIM, NPAR>
+ 	, public Minimizer<FitPolicy<T, XDIM, YDIM, NPAR>>
+ 	{
+ 	public:
+ 		// Typedefs
+ 		typedef ParametrizedFunction<T, XDIM, YDIM, NPAR> model_type;
+ 		typedef Minimizer<FitPolicy<T, XDIM, YDIM, NPAR>> minimizer_type;
 
-		Model * _Model;
-		std::vector<ModelParameter> _ModelParams;
+ 	private:
+ 		// Verbosity
+ 		Verbosity _Verbosity;
+ 		// Data
+ 		vector<x_type> _X;
+ 		vector<y_type> _Y;
+ 		// Model
 
-	public:
-		Fitter(FitModel<XT, YT>* model): _Model(model), _ModelParams() {
-			_ModelParams.reserve(_Model->NParams());
-			for(int n = 0; n < _Model->NParams(); ++n) {
-				std::ostringstream oss;
-				oss<<"p"<<n;
-				_ModelParams.push_back(ModelParameter(n, oss.str()));
-			}
-		}
+ 	public:
+ 		// Constructors/Destructor
+ 		Fitter(Verbosity verbosity = Verbosity::Silent)
+ 		: _Verbosity(verbosity)
+ 		, minimizer_type(verbosity)
+ 		{}
 
-		unsigned int NParams() const { return _Model->NParams(); }
+ 		~Fitter() {}
 
-		void SetInitParamValue(unsigned int i, double p) {
-			std::assert(i < NParams());
-			_ModelParams[i].SetValue(p);
-		}
-		void SetInitParamError(unsigned int i, double e) {
-			std::assert(i < NParams());
-			_ModelParams[i].SetError(e);
-		}
-		void SetParamLimits(unsigned int i, double low, double up) {
-			std::assert(i < NParams());
-			_ModelParams[i].SetLimits(low, up);
-		}
-		void RemoveParamLimits(unsigned int i) {
-			std::assert(i < NParams());
-			_ModelParams[i].RemoveLimits();
-		}
-		void SetParamLowerLimit(unsigned int i, double low) {
-			std::assert(i < NParams());
-			_ModelParams[i].SetLowerLimit(low);
-		}
-		void SetParamUpperLimit(unsigned int i, double up) {
-			std::assert(i < NParams());
-			_ModelParams[i].SetUpperLimit(up);
-		}
+ 		// Fit methods
+ 		template<typename Iterator>
+ 		Fit<T, XDIM, YDIM, NPAR> fit(model_type * model, Iterator x_it, Iterator y_it, unsigned int npts);
+ 		Fit<T, XDIM, YDIM, NPAR> fit(model_type * model, const vector<x_type>& x_v, const vector<y_type>& y_v) 
+ 		{
+ 			if(x_v.size() != y_v.size())
+ 				ERROR();
+ 			return fit(model, x_v.begin(), y_v.begin(), x_v.size());
+ 		}
 
-		FitResult Fit(const FitData<XT, YT> * data) const { return DoFit(data); }
+ 	};
 
-	private:
-		virtual FitResult DoFit(const FitData<XT, YT> * data) =0;
+ 	template<
+ 	typename T, int XDIM, int YDIM, int NPAR,
+ 	template<typename, int, int, unsigned int> class FitPolicy,
+ 	template<typename> class Minimizer
+ 	>
+ 	Fit<T, XDIM, YDIM, NPAR> 
+ 	Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer>::fit(model_type * model, Iterator x_it, Iterator y_it, unsigned int npts)
+ 	{
+ 		// Get initial parameters
+ 		std::vector<double> init_params(model->getParamValues());
+ 		// Set x and y
+ 		init(model, x_it, y_it, npts);
+ 		// Minimize
+ 		auto minimum = minimize(this, init_params);
+ 		// Return Fit
+ 		return Fit<T, XDIM, YDIM, NPAR>(model, minimum.UserParameters().Errors(), minimum.Fval());
+ 	}
 
-	};
-    
-    template<class XT, class YT, class Minimizer>
-    class Chi2Fitter: public Fitter<XT, YT>
-    {
-    private:
-		static const double InitError;
+ 	template<
+ 	template<typename, int, int, unsigned int> class FitPolicy, 
+ 	template<typename> class Minimizer,
+ 	typename T, int XDIM, int YDIM, unsigned int NPAR,
+ 	typename Iterator
+ 	>
+ 	Fit<T, XDIM, YDIM, NPAR> fit(ParametrizedFunction<T, XDIM, YDIM, NPAR> * model, Iterator data_begin, Iterator data_end)
+ 	{
+ 		Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer> fitter;
+ 		return fitter.fit(model, data_begin, data_end);
+ 	}
 
-	template<class DataT, class XT>
-	static Enable_if<std::is_floating_point<XT>::value, void> SetDummyParameters(ModelParameters& p, Data<DataT, XT>* data);
-	template<class DataT, class XT>
-	static Enable_if<!std::is_floating_point<XT>::value, void> SetDummyParameters(ModelParameters& p, Data<DataT, XT>* data);
-	
-	template<class DataT, class XT>
-	static ModelParameters GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model);
-	template<class DataT, class XT>
-	static ModelParameters GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams);
-	template<class DataT, class XT>
-	static ModelParameters GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors);
+ 	// template<typename T, int XDIM, int YDIM, unsigned int NPAR,
+ 	// template<typename, int, int, unsigned int> class FitPolicy, 
+ 	// template<typename, typename, typename...> class MinimizerPolicy,
+ 	// typename... MinimizerOpts
+ 	// >
+ 	// class Fitter: public FitPolicy<T, XDIM, YDIM, NPAR>
+ 	// {
+ 	// private:
+ 	// 	typedef FitPolicy<T, XDIM, YDIM, NPAR> FitFcn;
+ 	// 	typedef DataSet<T, XDIM, YDIM> DataT;
+ 	// 	typedef VParametrizedFunction<T, XDIM, YDIM, NPAR> ModelT;
 
-    public:
-		template<class DataT, class XT>
-		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model);
-		template<class DataT, class XT>
-		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams);
-		template<class DataT, class XT>
-		static Result<DataT, XT> Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors);
+ 	// 	ModelT * _Model;
 
-	private:
-		FitResult DoFit();
+ 	// public:
+ 	// 	Fitter(DataT * data, ModelT * model): FitFcn(data, model), _Model(model) {}
 
-    };
+ 	// 	FitResult<T, XDIM, YDIM, NPAR> fit() {
+ 	// 		// Get initial parameters
+ 	// 		std::vector<double> init_params(_Model->getParamValues().begin(), _Model->getParamValues().end());
+ 	// 		// Minimize
+ 	// 		auto minimum = Minimize<MinimizerPolicy, MinimizerOpts...>(this, init_params);
+ 	// 		return FitResult<T, XDIM, YDIM, NPAR>(_Model, minimum.UserParameters().Errors(), minimum.Fval());
+ 	// 	}
+ 	// };
 
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    const double Fitter<Fcn, Minimizer>::InitError = 0.1;
+ 	// template<
+ 	// template<typename, int, int, unsigned int> class FitPolicy, 
+ 	// template<typename, typename, typename...> class MinimizerPolicy,
+ 	// typename... MinimizerOpts,
+ 	// typename T, int XDIM, int YDIM, unsigned int NPAR
+ 	// >
+ 	// Fitter<T, XDIM, YDIM, NPAR, FitPolicy, MinimizerPolicy, MinimizerOpts...> *
+ 	// MakeFitter(DataSet<T, XDIM, YDIM> * data, VParametrizedFunction<T, XDIM, YDIM, NPAR> * model)
+ 	// {
+ 	// 	return new Fitter<T, XDIM, YDIM, NPAR, FitPolicy, MinimizerPolicy, MinimizerOpts...>(data, model);
+ 	// }
 
-// ----------------------------------------------------------------------
-// Fitter static Fit member functions
-// ----------------------------------------------------------------------
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    Result<DataT, XT> Fitter<Fcn, Minimizer>::Fit(Data<DataT, XT>* data, Model<DataT, XT>* model)
-    {
-	Fcn<DataT, XT> F(data, model);
-	LQCDDebug(3)<<"\nMinimization function initialized!\n";
-
-	ModelParameters init_par = GetInitialFitParameters(data, model);
-	LQCDDebug(2)<<"Initial parameters : "<<'\n'<<init_par;
-	
-        // Minimize F
-	ModelParameters result = Minimizer<Fcn<DataT, XT>>::Minimize(F, init_par);
-	
-	return Result<DataT, XT>(data, model, result);
-    }
-
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    Result<DataT, XT> Fitter<Fcn, Minimizer>::Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams)
-    {
-	Fcn<DataT, XT> F(data, model);
-	LQCDDebug(3)<<"\nMinimization function initialized!\n";
-
-	ModelParameters init_par = GetInitialFitParameters(data, model, initParams);
-	LQCDDebug(2)<<"Initial parameters : "<<'\n'<<init_par;
-	
-        // Minimize F
-	ModelParameters result = Minimizer<Fcn<DataT, XT>>::Minimize(F, init_par);
-	
-	return Result<DataT, XT>(data, model, result);
-    }
-
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    Result<DataT, XT> Fitter<Fcn, Minimizer>::Fit(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors)
-    {
-	Fcn<DataT, XT> F(data, model);
-	LQCDDebug(3)<<"\nMinimization function initialized!\n";
-
-	ModelParameters init_par = GetInitialFitParameters(data, model, initParams, initErrors);
-	LQCDDebug(2)<<"Initial parameters : "<<'\n'<<init_par;
-	
-        // Minimize F
-	ModelParameters result = Minimizer<Fcn<DataT, XT>>::Minimize(F, init_par);
-	
-	return Result<DataT, XT>(data, model, result);
-    }
-
-// ----------------------------------------------------------------------
-// Fitter static GetInitialFitParameters member functions
-// ----------------------------------------------------------------------
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    Enable_if<std::is_floating_point<XT>::value, void> Fitter<Fcn, Minimizer>::SetDummyParameters(ModelParameters& p, Data<DataT, XT>* data)
-    {
-	if(data->HaveXCorrelation()) {
-	    int nData = data->nData();
-// Add "pseudo-parameters" to deal with cases of x-correlation in dimension k
-	    if(data->IsCorrelatedXDim(0)) {
-		for(int i=0; i<nData; ++i) {
-// Name for parameter x_ik
-		    std::ostringstream oss;
-		    oss<<"x"<<i;
-// Add parameter p
-		    p.Add(oss.str(), data->x(i), fabs(data->x(i)) * InitError);
-		}
-	    }
-	}
-    }
-    
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    Enable_if<!std::is_floating_point<XT>::value, void> Fitter<Fcn, Minimizer>::SetDummyParameters(ModelParameters& p, Data<DataT, XT>* data)
-    {
-	if(data->HaveXCorrelation()) {
-	    int nxDim = data->nxDim();
-	    int nData = data->nData();
-// Add "pseudo-parameters" to deal with cases of x-correlation in dimension k
-	    for(int k=0; k<nxDim; ++k) {
-		if(data->IsCorrelatedXDim(k)) {
-		    for(int i=0; i<nData; ++i) {
-// Name for parameter x_ik
-			std::ostringstream oss;
-			oss<<"x"<<i<<k;
-// Add parameter p
-			p.Add(oss.str(), data->x(i)[k], fabs(data->x(i)[k]) * InitError);
-		    }
-		}
-	    }
-	}
-    }
-    
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    ModelParameters Fitter<Fcn, Minimizer>::GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model)
-    {
-	ModelParameters result(model->NbOfParameters());
-	SetDummyParameters(result, data);
-	return result;
-    }
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    ModelParameters Fitter<Fcn, Minimizer>::GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams)
-    {
-	ModelParameters result(initParams);
-	SetDummyParameters(result, data);
-	return result;
-    }
-    template<template<class, class> class Fcn,
-	     template<class> class Minimizer>
-    template<class DataT, class XT>
-    ModelParameters Fitter<Fcn, Minimizer>::GetInitialFitParameters(Data<DataT, XT>* data, Model<DataT, XT>* model, const std::vector<double>& initParams, const std::vector<double>& initErrors)
-    {
-	ModelParameters result(initParams, initErrors);
-	SetDummyParameters(result, data);
-	return result;
-    }
-
-
-}
+ }
 
 #endif	// FITTER_HPP_

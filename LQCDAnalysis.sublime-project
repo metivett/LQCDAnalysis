@@ -1,0 +1,23 @@
+{
+	"folders":
+	[
+		{
+			"path": "/home/thibaut/workspace/LQCDAnalysis"
+		}
+	],
+	"settings":
+	{
+		"sublimeclang_additional_language_options":
+		{
+			"c++":
+			[
+				"-std=c++11"
+			]
+		},
+		"sublimeclang_options":
+		[
+			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}",
+			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}/include"
+		]
+	}
+}

@@ -595,8 +595,8 @@ double RandGen::getNormal(const double mean, const double sigma)
 
 	do
 	{
-		rx = getUniform(-1.0,1.0);
-		ry = getUniform(-1.0,1.0);
+		rx = GetUniform(-1.0,1.0);
+		ry = GetUniform(-1.0,1.0);
 		sqnrm = rx*rx + ry*ry;
 	}while ((sqnrm > 1.0)||(sqnrm == 0.0));
 

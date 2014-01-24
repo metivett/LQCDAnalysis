@@ -5,6 +5,9 @@
  *      Author: Thibaut Metivet
  */
 
+#ifndef TYPE_TRAITS_HPP
+#define TYPE_TRAITS_HPP
+
 #include <type_traits>
 
 namespace LQCDA {
@@ -20,6 +23,12 @@ struct or_<std::integral_constant<T,t>, std::integral_constant<U,u>>: std::integ
 template<class T> struct not_;
 template<class T, T t>
 struct not_<std::integral_constant<T,t>>: std::integral_constant<bool, !t> {};
+
+template<bool Condition, typename T, typename F> struct if_;
+template<typename T, typename F>
+struct if_<true, T, F> { typedef T result; };
+template<typename T, typename F>
+struct if_<false, T, F> { typedef F result; };
 
 
 template<typename ... A>
@@ -55,3 +64,5 @@ template<typename T>
 struct are_lvalue_references<T> : std::is_lvalue_reference<T> {};
 
 }
+
+#endif // TYPE_TRAITS_HPP
