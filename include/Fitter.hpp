@@ -8,54 +8,76 @@
 #ifndef FITTER_HPP_
 #define FITTER_HPP_
 
+ #include <memory>
+
  #include "Globals.hpp"
- #include "Fit.hpp"
- #include "FitPolicy.hpp"
+ #include "TypeTraits.hpp"
+ #include "CostFunction.hpp"
  #include "Minimizer.hpp"
- #include "Minuit2Minimizer.hpp"
+
 
  namespace LQCDA {
 
- 	template<
- 	typename T, int XDIM, int YDIM, int NPAR,
- 	template<typename, int, int, unsigned int> class FitPolicy,
- 	template<typename> class Minimizer
- 	>
+ 	template<typename T>
  	class Fitter
- 	: public FitPolicy<T, XDIM, YDIM, NPAR>
- 	, public Minimizer<FitPolicy<T, XDIM, YDIM, NPAR>>
  	{
  	public:
- 		// Typedefs
- 		typedef ParametrizedFunction<T, XDIM, YDIM, NPAR> model_type;
- 		typedef Minimizer<FitPolicy<T, XDIM, YDIM, NPAR>> minimizer_type;
+ 		struct Options {
+ 			Options() {
+ 				MinimizerType = MIGRAD;
+ 				verbosity = SILENT;
+ 			}
+
+ 			MinimizerType minimizer_type;
+ 			Verbosity verbosity;
+ 		};
+
+ 		struct Result {
+ 			Result();
+ 		};
 
  	private:
+ 		// State
+ 		struct FitterState
+ 		{
+ 			// Cost Function
+ 			std::unique_ptr<CostFunction<T>> _CostFcn;
+ 		};
  		// Verbosity
  		Verbosity _Verbosity;
+ 		// Minimizer
+ 		std::unique_ptr<minimizer_type> _Minimizer;
  		// Data
- 		vector<x_type> _X;
- 		vector<y_type> _Y;
+ 		unsigned int _Npts;
+ 		const vector<x_type> * _X_V;
+ 		const vector<y_type> * _Y_V;
+ 		std::unique_ptr<Vector<T, Dynamic>> * _X;
+ 		std::unique_ptr<Vector<T, Dynamic>> * _Y;
  		// Model
+ 		model_type * _Model;
+ 		std::unique_ptr<Vector<T, Dynamic>> * _MX;
 
  	public:
- 		// Constructors/Destructor
+ 		// Constructors
  		Fitter(Verbosity verbosity = Verbosity::Silent)
  		: _Verbosity(verbosity)
+ 		, _Npts(0)
+ 		, _X_V(0)
+ 		, _Y_V(0)
  		, minimizer_type(verbosity)
  		{}
+ 		// Destructor
+ 		virtual ~Fitter() = default;
 
- 		~Fitter() {}
+ 		// Fit
+ 		virtual FitResult<T> fit(
+ 			const std::vector<const scalar_model_t *>& model,
+ 			const Vector<T>& init,
+ 			const Options& options = Options())
+ 			const =0;
 
- 		// Fit methods
- 		template<typename Iterator>
- 		Fit<T, XDIM, YDIM, NPAR> fit(model_type * model, Iterator x_it, Iterator y_it, unsigned int npts);
- 		Fit<T, XDIM, YDIM, NPAR> fit(model_type * model, const vector<x_type>& x_v, const vector<y_type>& y_v) 
- 		{
- 			if(x_v.size() != y_v.size())
- 				ERROR();
- 			return fit(model, x_v.begin(), y_v.begin(), x_v.size());
- 		}
+ 	private:
+ 		double eval_fit_fcn(params_type p);
 
  	};
 
@@ -65,28 +87,65 @@
  	template<typename> class Minimizer
  	>
  	Fit<T, XDIM, YDIM, NPAR> 
- 	Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer>::fit(model_type * model, Iterator x_it, Iterator y_it, unsigned int npts)
+ 	Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer>::fit(model_type * model, const vector<x_type> * x_v, const vector<y_type> * y_v)
  	{
+ 		// Check sizes
+ 		if(x_v->size() != y_v->size())
+ 			ERROR(FIT, "Size of X != Size of Y");
+ 		_Npts = x_v->size();
+
+ 		// Initialize internal variables
+ 		_Model = model;
+ 		_X_V = x_v;
+ 		_Y_V = y_v;
+ 		_X = std::unique_ptr<Vector<T, Dynamic>>(new Vector<T, Dynamic>(_Npts * XDIM));
+ 		_Y = std::unique_ptr<Vector<T, Dynamic>>(new Vector<T, Dynamic>(_Npts * YDIM));
+ 		_MX = std::unique_ptr<Vector<T, Dynamic>>(new Vector<T, Dynamic>(_Npts * YDIM));
+ 		internal::fill<XDIM>(_X, x_v->begin(), x_v->end(), XDIM);
+ 		internal::fill<YDIM>(_Y, y_v->begin(), y_v->end(), YDIM);
+
  		// Get initial parameters
- 		std::vector<double> init_params(model->getParamValues());
- 		// Set x and y
- 		init(model, x_it, y_it, npts);
+ 		p_type init_p(model->getParamValues());
+
  		// Minimize
- 		auto minimum = minimize(this, init_params);
+ 		auto minimum = minimize(eval_fit_fcn, init_p);
+
  		// Return Fit
  		return Fit<T, XDIM, YDIM, NPAR>(model, minimum.UserParameters().Errors(), minimum.Fval());
  	}
 
  	template<
+ 	typename T, int XDIM, int YDIM, int NPAR,
+ 	template<typename, int, int, unsigned int> class FitPolicy,
+ 	template<typename> class Minimizer
+ 	>
+ 	double Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer>::eval_fit_fcn(params_type p)
+ 	{
+		// Set model parameters
+ 		_Model->setParValues(p);
+
+ 		// Compute model(x)
+ 		vector<y_type> mx(_Npts);
+ 		for(unsigned int i=0; i<_Npts; ++i)
+ 			mx[i] = (*_Model)(*_X_V[i]);
+ 		internal::fill<YDIM>(_MX, mx.begin(), mx.end(), YDIM);
+
+ 		// Compute and return FitFcn value
+ 		return evaluate(_X, _Y, _MX);
+ 	}
+
+ 	template<
  	template<typename, int, int, unsigned int> class FitPolicy, 
  	template<typename> class Minimizer,
- 	typename T, int XDIM, int YDIM, unsigned int NPAR,
- 	typename Iterator
+ 	typename T, int XDIM, int YDIM, unsigned int NPAR
  	>
- 	Fit<T, XDIM, YDIM, NPAR> fit(ParametrizedFunction<T, XDIM, YDIM, NPAR> * model, Iterator data_begin, Iterator data_end)
+ 	Fit<T, XDIM, YDIM, NPAR> fit
+ 	( ParametrizedFunction<T, XDIM, YDIM, NPAR> * model
+ 		, const vector<typename ParametrizedFunction<T, XDIM, YDIM, NPAR>::x_type> * x_v
+ 		, const vector<typename ParametrizedFunction<T, XDIM, YDIM, NPAR>::y_type> * y_v)
  	{
  		Fitter<T, XDIM, YDIM, NPAR, FitPolicy, Minimizer> fitter;
- 		return fitter.fit(model, data_begin, data_end);
+ 		return fitter.fit(model, x_v, y_v);
  	}
 
  	// template<typename T, int XDIM, int YDIM, unsigned int NPAR,

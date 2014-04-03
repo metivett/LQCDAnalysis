@@ -11,7 +11,9 @@
  #include <string>
  #include <fstream>
  #include <unordered_map>
+
  #include "DataReader.hpp"
+ #include "Exceptions.hpp"
 
  namespace LQCDA {
 
@@ -141,7 +143,7 @@
  			int pos = data_pos.pos + offset;
  			int len = data_pos.len - offset;
  			if(len <= 0)
- 				ERROR(IO, "No data at offset " + strFrom(offset) 
+ 				ERROR(IO, "No data at offset " + utils::strFrom(offset) 
  					+ " with name " + s + " in file " + _Name);
 
  			internal::substreambuf ssbuf(getFstream().rdbuf(), pos, len);

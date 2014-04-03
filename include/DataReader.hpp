@@ -11,7 +11,6 @@
 #include "io.hpp"
 #include "Globals.hpp"
 #include "TypeTraits.hpp"
-#include "Vector.hpp"
 #include <istream>
 
  namespace LQCDA {
@@ -40,10 +39,10 @@
  	};
 
  	template<typename T>
- 	class DefaultDataReader<vector<T>, typename std::enable_if<std::is_fundamental<T>::value>::type>
+ 	class DefaultDataReader<std::vector<T>, typename std::enable_if<std::is_fundamental<T>::value>::type>
  	{
  	public:
- 		static void read(vector<T>& v, std::istream& is) {
+ 		static void read(std::vector<T>& v, std::istream& is) {
  			T buf;
  			while(is >> buf) {
  				v.push_back(buf);

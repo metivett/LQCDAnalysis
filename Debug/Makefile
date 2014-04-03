@@ -1,10 +1,15 @@
 CC = g++
-CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++0x -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
+CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++11 -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
 LIB_NAME = libLQCDAnalysis.so
-INCLUDES = -I/home/thibaut/workspace/LQCDAnalysis/include -I/home/thibaut/workspace/LQCDAnalysis
+INCLUDES = -I/home/thibaut/workspace/LQCDAnalysis/include -I/home/thibaut/workspace/LQCDAnalysis/utils/include -I/home/thibaut/workspace/LQCDAnalysis
 LIBS = -lgsl -lmgl -lMinuit2
 SRC_DIR = ../src
-OBJ_FILES = FunctionInterpolator.o interpolator.o io.o io_correlator.o io_sample.o io_utils.o Minuit2Minimizer.o ModelParameters.o random.o statistics.o
+SRC = $(wildcard $(SRC_DIR)/*.cpp)
+UTILS_DIR = ../utils/src
+SRC += $(wildcard $(UTILS_DIR)/*.cpp)
+OBJ_FILES = $(SRC:.cpp=.o)
+#OBJ_FILES = FunctionInterpolator.o interpolator.o io.o io_correlator.o io_sample.o io_utils.o Minuit2Minimizer.o ModelParameters.o random.o statistics.o
+
 INSTALL_DIR = /usr/local/lib
 
 all : $(LIB_NAME)

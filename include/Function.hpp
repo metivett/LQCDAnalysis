@@ -8,167 +8,119 @@
 #ifndef FUNCTION_HPP
 #define FUNCTION_HPP
 
+ #include <functional>
+
  #include "Globals.hpp"
- #include "Vector.hpp"
- #include "Array.hpp"
  #include "TypeTraits.hpp"
+ #include "Exceptions.hpp"
 
- namespace LQCDA {
-
-	// template<typename XT, typename YT>
- // 	class Function
- // 	{
- // 	public:
- // 		typedef typename std::remove_reference<XT>::type x_type;
- // 		typedef typename std::remove_reference<YT>::type y_type;
-
- // 	protected:
- // 		typedef typename if_<std::is_fundamental<x_type>::value, x_type, const x_type&>::result x_arg_type;
- // 		typedef typename if_<std::is_fundamental<y_type>::value, y_type, const y_type&>::result y_arg_type;
-
- // 	public:
- // 		virtual y_type operator() (x_arg_type) const =0;
-
- // 	};
-
- // 	template<typename T, int XDIM, int YDIM>
- // 	using VFunction = Function<Vector<T, XDIM>, Vector<T, YDIM>>;
+namespace LQCDA {
 
 /******************************************************************************
- *                            Base Function class                             *
+ *                               ScalarFunction                               *
  ******************************************************************************/
 
- 	/* Generic template declaration */
- 	template<typename Scalar, int XDIM, int YDIM>
- 	class Function;
-
- 	/* Compile-time X and Y dimensions */
- 	template<typename Scalar, int XDIM, int YDIM>
- 	class Function
+	template<typename T>
+ 	class ScalarFunction
  	{
- 	public:
- 		// Typedefs
- 		typedef array<Scalar, XDIM> x_type;
- 		typedef array<Scalar, YDIM> y_type;
-
- 	protected:
- 		// Typedefs
- 		typedef typename if_<std::is_fundamental<x_type>::value, x_type, const x_type&>::result arg_type;
+ 	private:
+ 		unsigned int _xDim;
 
  	public:
  		// Constructors/Destructor
- 		explicit Function() {}
- 		virtual ~Function() {}
+ 		explicit ScalarFunction(unsigned int xdim)
+ 		: _xDim(xdim)
+ 		{}
+ 		virtual ~ScalarFunction() = default;
 
  		// Accessors
- 		constexpr unsigned int XDim() const { return XDIM; }
- 		constexpr unsigned int YDim() const { return YDIM; }
+ 		unsigned int xDim() const { return _xDim; }
+ 		unsigned int yDim() const { return 1; }
 
  		// Evaluators
- 		y_type operator()(arg_type x) { return evaluate(x); }
+ 		virtual T operator()(const T * x) const =0;
+ 		T operator()(const std::vector<T>& x) const;
+ 		T operator()(const Vector<T>& x) const;
+ 		template<typename... Ts>
+ 		T operator()(const Ts...x) const;
 
  	private:
- 		virtual y_type evaluate(arg_type x) =0;
-
- 	};
-
- 	/* Compile-time X dimension and dynamic Y dimension */
- 	template<typename Scalar, int XDIM>
- 	class Function<Scalar, XDIM, Dynamic>
- 	{
- 	public:
- 		// Typedefs
- 		typedef array<Scalar, XDIM> x_type;
- 		typedef vector<Scalar> y_type;
+ 		void checkXdim(unsigned int xdim) const;
 
  	protected:
- 		// Typedefs
- 		typedef typename if_<std::is_fundamental<x_type>::value, x_type, const x_type&>::result arg_type;
-
- 	public:
- 		// Constructors/Destructor
- 		explicit Function() {}
- 		
- 		virtual ~Function() {}
-
- 		// Accessors
- 		constexpr unsigned int XDim() const { return XDIM; }
- 		virtual unsigned int YDim() const =0;
-
- 		// Evaluators
- 		y_type operator()(arg_type x) { return evaluate(x); }
-
- 	private:
- 		virtual y_type evaluate(arg_type x) =0;
+ 		void setXDim(unsigned int xdim) { _xDim = xdim; }
 
  	};
 
- 	/* Compile-time Y dimension and dynamic X dimension */
- 	template<typename Scalar, int YDIM>
- 	class Function<Scalar, Dynamic, YDIM>
+ 	template<typename T>
+ 	T ScalarFunction<T>::operator()(const std::vector<T>& x) const
  	{
- 	public:
- 		// Typedefs
- 		typedef vector<Scalar> x_type;
- 		typedef array<Scalar, YDIM> y_type;
-
- 	protected:
- 		// Typedefs
- 		typedef typename if_<std::is_fundamental<x_type>::value, x_type, const x_type&>::result arg_type;
-
- 	public:
- 		// Constructors/Destructor
- 		explicit Function() {}
- 		virtual ~Function() {}
-
- 		// Accessors
- 		virtual unsigned int XDim() const =0;
- 		constexpr unsigned int YDim() const { return YDIM; }
-
- 		// Evaluators
- 		y_type operator()(arg_type x) { return evaluate(x); }
-
- 	private:
- 		virtual y_type evaluate(arg_type x) =0;
-
- 	};
-
- 	/* Dynamic X and Y dimensions */
- 	template<typename Scalar>
- 	class Function<Scalar, Dynamic, Dynamic>
+ 		checkXdim(x.size());
+ 		return (*this)(x.data());
+ 	}
+ 	template<typename T>
+ 	T ScalarFunction<T>::operator()(const Vector<T>& x) const
  	{
- 	public:
- 		// Typedefs
- 		typedef vector<Scalar> x_type;
- 		typedef vector<Scalar> y_type;
+ 		checkXdim(x.size());
+ 		return (*this)(x.data());
+ 	}
+ 	template<typename T>
+ 	template<typename... Ts>
+ 	T ScalarFunction<T>::operator()(const Ts... xs) const
+ 	{
+ 		// static_assert(are_trivially_assignable<T, Ts...>::value, 
+ 		// 	"ScalarFunction provided arguments are not compatible with type T");
+ 		static_assert(are_floating_points<Ts...>::value, 
+ 			"ScalarFunction provided arguments are not compatible with type T");
 
- 	protected:
- 		// Typedefs
- 		typedef typename if_<std::is_fundamental<x_type>::value, x_type, const x_type&>::result arg_type;
+ 		const T x[] = {xs...};
+ 		checkXdim(sizeof...(xs));
+ 		return (*this)(x);
+ 	}
 
- 	public:
- 		// Constructors/Destructor
- 		explicit Function() {}
- 		virtual ~Function() {}
+ 	template<typename T>
+ 	void ScalarFunction<T>::checkXdim(unsigned int xdim) const
+ 	{
+ 		if(_xDim && xdim != xDim()) {
+ 			ERROR(SIZE, "wrong number of arguments provided (expected "
+ 				+ utils::strFrom(xDim()) + ", got " + utils::strFrom(xdim) + ")");
+ 		}
+ 	}
 
- 		// Accessors
- 		virtual unsigned int XDim() const =0;
- 		virtual unsigned int YDim() const =0;
 
- 		// Evaluators
- 		y_type operator()(arg_type x) { return evaluate(x); }
+/******************************************************************************
+ *                               VectorFunction                               *
+ ******************************************************************************/
 
- 	private:
- 		virtual y_type evaluate(arg_type x) =0;
+ 	// template<typename T>
+ 	// class VectorFunction
+ 	// {
+ 	// private:
+ 	// 	unsigned int _xDim, _yDim;
 
- 	};
+ 	// public:
+ 	// 	// Constructors/Destructor
+ 	// 	explicit VectorFunction(unsigned int xdim, unsigned int ydim)
+ 	// 	: _xDim(xdim)
+ 	// 	, _yDim(ydim)
+ 	// 	{}
+ 	// 	virtual ~VectorFunction() = default;
 
- 	#define INHERIT_FUNCTION_TYPEDEFS \
- 	public: \
- 		using typename Function<Scalar, XDIM, YDIM>::x_type; \
- 		using typename Function<Scalar, XDIM, YDIM>::y_type; \
- 	protected: \
- 		using typename Function<Scalar, XDIM, YDIM>::arg_type; \
+ 	// 	// Accessors
+ 	// 	unsigned int xDim() const { return _xDim; }
+ 	// 	unsigned int yDim() const { return _yDim; }
+
+ 	// 	// Evaluators
+ 	// 	virtual T operator()(const T * x) const =0;
+ 	// 	T operator()(const std::vector<T>& x) const;
+ 	// 	T operator()(const Vector<T>& x) const;
+ 	// 	template<typename... Ts>
+ 	// 	T operator()(const Ts...x) const;
+
+ 	// private:
+ 	// 	void checkXdim(unsigned int xdim) const;
+
+ 	// };
 
  }
 

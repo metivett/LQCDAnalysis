@@ -14,24 +14,25 @@
 
  namespace LQCDA {
 
-	template<typename Scalar, int XDIM, int YDIM>
- 	class StaticFunction: public virtual Function<Scalar, XDIM, YDIM>
+ 	template<typename T>
+ 	class StaticScalarFunction
+ 	: public virtual ScalarFunction<T>
  	{
- 	INHERIT_FUNCTION_TYPEDEFS;
-
  	private:
  		// Typedefs
- 		typedef Function<Scalar, XDIM, YDIM> Base;
- 		typedef std::function<y_type(arg_type)> fcn_type;
+ 		typedef std::function<T(const T *)> fcn_type;
 
  	private:
  		fcn_type _Fcn;
 
  	public:
- 		StaticFunction(fcn_type f) : _Fcn(f) {}
+ 		StaticScalarFunction(fcn_type f, unsigned int xdim) 
+ 		: ScalarFunction<T>(xdim)
+ 		, _Fcn(f) 
+ 		{}
 
  	private:
- 		virtual y_type operator() (arg_type x) const override {
+ 		virtual T operator() (const T * x) const override {
  			return _Fcn(x);
  		}
  	};

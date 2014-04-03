@@ -9,7 +9,6 @@
 #define DATA_FILE_CPP
 
  #include "DataFile.hpp"
- #include "Exceptions.hpp"
 
  using namespace LQCDA;
 
@@ -72,12 +71,12 @@
 
  void AsciiDataFile::save()
  {
- 	ERROR(Implementation, "Not implemented yet");
+ 	ERROR(IMPLEMENTATION, "Not implemented yet");
  }
 
  void AsciiDataFile::saveAs(const std::string& name)
  {
- 	ERROR(Implementation, "Not implemented yet");
+ 	ERROR(IMPLEMENTATION, "Not implemented yet");
  }
 
  std::ios_base::openmode fstreamMode(DataFile::FileMode m)

@@ -17,7 +17,8 @@
 		"sublimeclang_options":
 		[
 			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}",
-			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}/include"
+			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}/include",
+			"-I${folder:${project_path:LQCDAnalysis.sublime-project}}/utils/include"
 		]
 	}
 }

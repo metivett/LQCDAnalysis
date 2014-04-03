@@ -8,47 +8,186 @@
 #ifndef MINUIT2_MINIMIZER_HPP_
 #define MINUIT2_MINIMIZER_HPP_
 
+ #include "Minimizer.hpp"
+
  #include "Minuit2/FCNBase.h"
  #include "Minuit2/FunctionMinimum.h"
  #include "Minuit2/MnMigrad.h"
  #include "Minuit2/MnPrint.h"
  #include "Minuit2/MnSimplex.h"
  #include "Minuit2/MnUserParameters.h"
- #include "Minimizer.hpp"
 
 
  namespace LQCDA {
 
- 	namespace internal {
-
- 		template<typename Fcn>
- 		class Mn2FCNWrapper: public ROOT::Minuit2::FCNBase
+ 	template<typename T>
+ 	class MnMigradMinimizer
+ 	: public Minimizer<T>
+ 	{
+ 	public:
+ 		class Options
+ 		: public Minimizer<T>::Options
  		{
- 		private:
- 			const Fcn * _F;
+ 			friend class MnMigradMinimizer<T>;
 
  		public:
- 			Mn2FCNWrapper(const Fcn * f): FCNBase(), _F(f) {}
+ 			unsigned int level;
+ 			bool pre_minimize;
+ 			unsigned int pre_min_level;
 
- 			virtual double Up () const { return 1.0; }
- 			virtual double operator()(const std::vector<double>& args) const { return (*_F)(args); }
+ 		public:
+ 			Options()
+ 			: Minimizer<T>::Options()
+ 			{ 
+ 				init(); 
+ 			}
+ 			Options(const typename Minimizer<T>::Options& opts)
+ 			: Minimizer<T>::Options(opts)
+ 			{
+ 				try 
+ 				{
+ 					init(dynamic_cast<const Options&>(opts));
+ 				}
+ 				catch(std::bad_cast) {
+ 					WARNING("uncomplete or incompatible options provided; init with default");
+ 					init();
+ 				}
+ 			}
+
+ 			virtual ~Options() noexcept = default;
+
+ 		private:
+ 			void init()
+ 			{
+ 				level = 2;
+ 				pre_minimize = true;
+ 				pre_min_level = 1;
+ 			}
+ 			void init(const Options& opts)
+ 			{
+ 				level = opts.level;
+ 				pre_minimize = opts.pre_minimize;
+ 				pre_min_level = opts.pre_min_level;
+ 			}
  		};
 
- 	}
+ 	private:
+ 		class Mn2FCNWrapper
+ 		: public ROOT::Minuit2::FCNBase
+ 		{
+ 		private:
+ 			const ScalarFunction<T>& _F;
 
- 	template<typename Fcn, typename Args, typename L>
- 	struct MnMigradMinimizer
- 	{
- 		static ROOT::Minuit2::FunctionMinimum minimize(const Fcn * F, const Args& initargs) {
- 			ROOT::Minuit2::MnUserParameters params(initargs, std::vector<double>(initargs.size(), 0.1));
- 			auto MnF = new internal::Mn2FCNWrapper<Fcn>(F);
- 			ROOT::Minuit2::MnMigrad migrad(*MnF, params, L::value);
- 			auto result =  migrad();
- 			delete MnF;
- 			return result;
- 		}
+ 		public:
+ 			Mn2FCNWrapper(const ScalarFunction<T>& f): FCNBase(), _F(f) {}
+
+ 			virtual double Up () const { return 1.0; }
+ 			virtual double operator()(const std::vector<double>& args) const { 
+ 				return _F(args);
+ 			}
+ 		};
+
+ 	public:
+ 		Options options;
+
+ 	public:
+ 		// Constructor
+ 		MnMigradMinimizer(const Options& opts = Options())
+ 		: options(opts)
+ 		{}
+ 		// Destructor
+ 		virtual ~MnMigradMinimizer() noexcept = default;
+
+ 		// Type id
+ 		static MinimizerID ID;
+
+ 		// Minimize
+ 		virtual typename Minimizer<T>::Result minimize(
+ 			const ScalarFunction<T>& F,
+ 			const std::vector<T>& x0) override;
+
  	};
 
+
+ 	template<typename T>
+ 	MinimizerID MnMigradMinimizer<T>::ID = MinimizerType::MIGRAD;
+
+	template<typename T>
+ 	std::ostream& operator<<(std::ostream& os, const typename MnMigradMinimizer<T>::Options& opts)
+ 	{
+ 		os << "MIGRAD options:\n"
+ 		<< "\tlevel = " << opts.level << std::endl
+ 		<< "\tpre_minimize = " << opts.pre_minimize << std::endl
+ 		<< "\tpre_minimize level = " << opts.pre_min_level << std::endl;
+ 	}
+
+ 	template<typename T>
+ 	typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
+ 		const ScalarFunction<T>& F, 
+ 		const std::vector<T>& x0)
+ 	{
+ 		utils::vostream vout(std::cout, options.verbosity);
+ 		vout(NORMAL) << "Minimizing with Minuit2 MIGRAD minimizer\n";
+ 		// vout(NORMAL) << options << std::endl;
+ 		LQCDA::operator<< <T>(vout(NORMAL), options) << std::endl;
+
+ 		vout(NORMAL) << "Initial parameters:\n";
+ 		ROOT::Minuit2::MnUserParameters params(x0, std::vector<T>(x0.size(), 0.1));
+ 		vout(NORMAL) << params << std::endl;
+
+ 		auto MnF = new Mn2FCNWrapper(F);
+
+ 		if(options.pre_minimize)
+ 		{
+ 			vout(DEBUG) <<"(MINUIT) Pre-minimizer call :\n"
+ 			<< "--------------------------------------------------------";
+ 			ROOT::Minuit2::MnMigrad migrad1(*MnF, params, options.pre_min_level);
+ 			auto preMin = migrad1();
+ 			vout(DEBUG) << preMin
+ 			<< "--------------------------------------------------------"
+ 			<< std::endl;
+
+ 		}
+ 		vout(DEBUG) <<"(MINUIT) Minimizer call :\n"
+ 		<< "--------------------------------------------------------";
+ 		ROOT::Minuit2::MnMigrad migrad2(*MnF, params, options.level);
+ 		auto Min =  migrad2();
+
+ 		delete MnF;
+
+ 		typename Minimizer<T>::Result result;
+ 		result.final_cost = Min.Fval();
+ 		result.is_valid = Min.IsValid();
+ 		result.minimum = Min.UserParameters().Params();
+
+ 		if(!Min.IsValid()) {
+ 			vout(NORMAL) << "Minuit Library reported that minimization result is not valid !\n";
+ 			vout(DEBUG)
+ 			<< "--------------------------------------------------------"
+ 			<< Min
+ 			<< "--------------------------------------------------------"
+ 			<< std::endl;
+
+ 			return result;
+ 		}
+ 		else {
+ 			vout(NORMAL) << "(MINUIT) Fit successful !\n"
+ 			<< "Resulting minimum is : " << std::endl
+ 			<< "--------------------------------------------------------"
+ 			<< Min
+ 			<< "--------------------------------------------------------"
+ 			<< std::endl;
+
+ 			return result;
+ 		}
+ 	}
+
+
+ 	// template<typename T>
+ 	// void RegisterMnMigradMinimizer()
+ 	// {
+ 	// 	static MinimizerFactoryRegistrar<MnMigradMinimizer, T> MFR;
+ 	// }
 
  	// class Mn2Minimizer
  	// {

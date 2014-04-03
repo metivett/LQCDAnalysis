@@ -63,6 +63,16 @@ struct are_lvalue_references<T, A...>: and_<
 template<typename T>
 struct are_lvalue_references<T> : std::is_lvalue_reference<T> {};
 
+// template<typename T, typename ... A>
+// struct are_trivially_assignable;
+// template<typename T, typename A0, typename ... As>
+// struct are_trivially_assignable<T, A0, As...>: and_<
+// 		std::integral_constant<bool, std::is_trivially_assignable<T, A0>::value>, 
+// 		std::integral_constant<bool, are_trivially_assignable<T, As...>::value>>
+// {};
+// template<typename T, typename A>
+// struct are_trivially_assignable<T, A> : std::is_trivially_assignable<T, A> {};
+
 }
 
 #endif // TYPE_TRAITS_HPP
