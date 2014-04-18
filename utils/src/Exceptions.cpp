@@ -24,3 +24,4 @@
  DEF_EXC(RUNTIME, runtime_error(msg + " (" + src_loc + ") "))
  DEF_EXC(IO, RUNTIME("IO error: " + msg, src_loc))
  DEF_EXC(MEMORY, RUNTIME("memory error: " + msg, src_loc))
+ DEF_EXC(NULLPTR, RUNTIME("null pointer error: " + msg, src_loc))

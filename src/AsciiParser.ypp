@@ -1,0 +1,113 @@
+/*
+ * AsciiParser.ypp
+ *
+ *  Created on: Apr 14, 2014
+ *      Author: Thibaut Metivet
+ */
+
+%code requires {
+	#include "DataFile.hpp"
+}
+
+%code {
+	#include "AsciiParser.hpp"
+	#include "AsciiLexer.hpp"
+
+	YY_DECL;
+	void yy::AsciiParser::error(const yy::location& loc, const std::string& msg)
+	{
+		std::cerr << loc << ": " << msg << std::endl;
+	}
+}
+
+%skeleton "lalr1.cc" /* -*- C++ -*- */
+%require "3.0.2"
+/*%output "AsciiParser.cpp"*/
+%locations
+/*%defines "AsciiParser.hpp"*/
+%define parser_class_name {AsciiParser}
+%define api.token.constructor
+%define api.value.type variant
+%define api.token.prefix {TOK_}
+%param {LQCDA::AsciiDataFile::AsciiParserState * state}
+%lex-param {void * scanner}
+%define parse.trace
+%define parse.error verbose
+
+%code {
+	#define scanner state->scanner
+}
+
+
+%token END 0 					"eof"
+%token NEWLINE 					"new line"
+%token <std::string>	ERROR 	"error"
+%token <double>			FLOAT	"double"
+%token <int>			INT		"integer"
+%token <std::string>	ID		"identifier"
+%token DBEGIN 					"begin data"
+%token DEND						"end data"
+
+%type <std::string>		matrix
+%type <std::string>		header
+%type <int> 			data_line
+%type <int> 			data_lines
+%type <int> 			floats
+
+
+%printer { yyoutput << $$; } <*>;
+
+%%
+
+
+data:
+	%empty				{}
+	| data data_block	{}
+	;
+
+data_block:
+	matrix
+	{
+		(*state->data)[$1].reset(new LQCDA::Matrix<double>(state->matrixQueue.front()));
+		state->matrixQueue.pop();
+	}
+	;
+
+matrix:
+	DBEGIN header data_lines DEND
+	{
+		const unsigned int nCol = $3;
+		const unsigned int nRow = state->doubleQueue.size()/nCol;
+
+		unsigned int nelts = state->doubleQueue.size();
+		if(nelts != nRow*nCol)
+		{
+			ERROR(SIZE, "matrix has a wrong size");
+		}
+
+		state->matrixQueue.push(LQCDA::Matrix<double>(nRow, nCol));
+		for(unsigned int d = 0; d < nelts; ++d)
+		{
+			state->matrixQueue.back()(d/nCol, d%nCol) = state->doubleQueue.front();
+			state->doubleQueue.pop();
+		}
+		$$ = $header;
+	}
+	;
+
+header:
+	ID 				{$$ = $ID;}
+	| header ID 	{$$ = $1 + " " + $ID;}
+
+data_lines:
+	%empty					{$$ = 0;}
+	| data_line data_lines	{$$ = $1;}
+
+data_line:
+	floats NEWLINE	{$$ = $1;}
+
+floats:
+	floats FLOAT 		{state->doubleQueue.push($FLOAT); $$ = $1 + 1;}
+	| floats INT 		{state->doubleQueue.push(static_cast<double>($INT)); $$ = $1 + 1;}
+	| FLOAT 			{state->doubleQueue.push($FLOAT); $$ = 1;}
+	| INT 				{state->doubleQueue.push(static_cast<double>($INT)); $$ = 1;}

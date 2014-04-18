@@ -11,7 +11,8 @@
  #include <memory>
 
  #include "Globals.hpp"
- #include "XYFitData.hpp"
+ #include "XYDataInterface.hpp"
+ #include "FitInterface.hpp"
  #include "ParametrizedFunction.hpp"
 
  namespace LQCDA {
@@ -29,15 +30,19 @@
  		typedef ParametrizedScalarFunction<T> ScalarModel;
 
  		// Data
- 		const XYFitData<T> & _Data;
+ 		const XYDataInterface<T> & _Data;
+ 		const FitInterface& _Fit;
  		std::vector<const ScalarModel *> _Model;
  		unsigned int _nPar;
 
  	public:
  		// Constructors
- 		explicit CostFunction(const XYFitData<T>& data);
+ 		explicit CostFunction(
+ 			const XYDataInterface<T>& data,
+ 			const FitInterface& fit);
  		CostFunction(
- 			const XYFitData<T>& data,
+ 			const XYDataInterface<T>& data,
+ 			const FitInterface& fit,
  			const std::vector<const ParametrizedScalarFunction<T> *>& model);
  		// Destructor
  		virtual ~CostFunction() noexcept = default;
@@ -55,19 +60,24 @@
  	};
 
  	template<typename T>
- 	CostFunction<T>::CostFunction(const XYFitData<T>& data)
+ 	CostFunction<T>::CostFunction(
+ 		const XYDataInterface<T>& data,
+ 		const FitInterface& fit)
  	: ScalarFunction<T>(0)
  	, _Data(data)
+ 	, _Fit(fit)
  	, _Model(data.yDim(), nullptr)
  	, _nPar{0}
  	{}
 
  	template<typename T>
  	CostFunction<T>::CostFunction(
- 		const XYFitData<T>& data,
+ 		const XYDataInterface<T>& data,
+ 		const FitInterface& fit,
  		const std::vector<const ParametrizedScalarFunction<T> *>& model)
  	: ScalarFunction<T>(0)
  	, _Data(data)
+ 	, _Fit(fit)
  	, _Model(data.yDim(), nullptr)
  	, _nPar{0}
  	{
@@ -103,7 +113,7 @@
  			checkModel(model[i]);
  			_Model[i] = model[i];
  		}
- 		this->setXDim(_nPar + _Data.nFitXDim() * _Data.nFitPoints());
+ 		this->setXDim(_nPar + _Fit.nFitXDim() * _Fit.nFitPoints());
  	}
 
  	template<typename T>
@@ -113,7 +123,7 @@
  		{
  			ERROR(MEMORY, "no model set");
  		}
- 		return _Data.yDim() * _Data.nFitPoints() - _nPar;
+ 		return _Data.yDim() * _Fit.nFitPoints() - _nPar;
  	}
 
  	template<typename T>
@@ -151,6 +161,7 @@
 
  	protected:
  		using CostFunction<T>::_Data;
+ 		using CostFunction<T>::_Fit;
  		using CostFunction<T>::_Model;
  		using CostFunction<T>::_nPar;
 
@@ -178,14 +189,17 @@
 
  	public:
  		// Constructors
- 		explicit Chi2CostFunction(const XYFitData<T>& data)
- 		: CostFunction<T>(data)
+ 		explicit Chi2CostFunction(
+ 			const XYDataInterface<T>& data,
+ 			const FitInterface& fit)
+ 		: CostFunction<T>(data, fit)
  		, _helper(new Helper)
  		{}
  		Chi2CostFunction(
- 			const XYFitData<T>& data,
+ 			const XYDataInterface<T>& data,
+ 			const FitInterface& fit,
  			const std::vector<const ParametrizedScalarFunction<T> *>& model)
- 		: CostFunction<T>(data, model)
+ 		: CostFunction<T>(data, fit, model)
  		, _helper(new Helper)
  		{}
  		// Destructor
@@ -213,7 +227,7 @@
  	T Chi2CostFunction<T>::operator()(const T * args) const
  	{
  		// init sizes
- 		index_t nFitPoints = _Data.nFitPoints();
+ 		index_t nFitPoints = _Fit.nFitPoints();
  		index_t xDim = _Data.xDim();
  		index_t yDim = _Data.yDim();
  		index_t ysize = yDim * nFitPoints;
@@ -243,7 +257,7 @@
  				xpar_ind = 0;
  				for(index_t xk=0; xk<xDim; ++xk)
  				{
- 					if(_Data.isXExact(xk))
+ 					if(_Fit.isXExact(xk))
  					{
  						_helper->x_buf(xk) = _Data.x(_helper->d_ind(i), xk);
  					}
@@ -276,11 +290,11 @@
  	template<typename T>
  	void Chi2CostFunction<T>::setCov(index_t k1, index_t k2, ConstBlock<Matrix<T>> cov) const
  	{
- 		index_t nFitPoints = _Data.nFitPoints();
+ 		index_t nFitPoints = _Fit.nFitPoints();
  		FOR_VEC(_helper->d_ind, i1)
  		FOR_VEC(_helper->d_ind, i2)
  		{
- 			if(_Data.isDataCorrelated(_helper->d_ind(i1), _helper->d_ind(i2)))
+ 			if(_Fit.isDataCorrelated(_helper->d_ind(i1), _helper->d_ind(i2)))
  			{
  				_helper->c_inv(k1*nFitPoints + i1, k2*nFitPoints + i2) =
  					cov(_helper->d_ind(i1), _helper->d_ind(i2));
@@ -293,9 +307,9 @@
  	{
  		// Resize
  		index_t nPoints = _Data.nPoints();
- 		index_t nFitPoints = _Data.nFitPoints();
+ 		index_t nFitPoints = _Fit.nFitPoints();
  		index_t xDim = _Data.xDim();
- 		index_t nFitXDim = _Data.nFitXDim();
+ 		index_t nFitXDim = _Fit.nFitXDim();
  		index_t yDim = _Data.yDim();
  		index_t size = (yDim + nFitXDim) * nFitPoints;
  		_helper->r.setConstant(size, T{0});
@@ -308,7 +322,7 @@
  		index_t di = 0;
  		for(index_t i=0; i<nPoints; ++i)
  		{
- 			if(_Data.isFitPoint(i))
+ 			if(_Fit.isFitPoint(i))
  			{
  				_helper->d_ind(di) = i;
  				di++;
@@ -317,7 +331,7 @@
  		index_t xk = 0;
  		for(index_t k=0; k<xDim; ++k)
  		{
- 			if(!_Data.isXExact(k))
+ 			if(!_Fit.isXExact(k))
  			{
  				_helper->x_ind(xk) = k;
  				xk++;
@@ -330,7 +344,7 @@
  		{
  			for(index_t yk2=0; yk2<yDim; ++yk2)
  			{
- 				if(_Data.isYYCorrelated(yk1, yk2))
+ 				if(_Fit.isYYCorrelated(yk1, yk2))
  				{
  					setCov(yk1, yk2, _Data.yyCov(yk1, yk2));
  				}
@@ -340,7 +354,7 @@
  		FOR_VEC(_helper->x_ind, xk1)
  		FOR_VEC(_helper->x_ind, xk2)
  		{
- 			if(_Data.isXXCorrelated(_helper->x_ind(xk1), _helper->x_ind(xk2)))
+ 			if(_Fit.isXXCorrelated(_helper->x_ind(xk1), _helper->x_ind(xk2)))
  			{
  				setCov(xk1 + yDim, xk2 + yDim, _Data.xxCov(_helper->x_ind(xk1), _helper->x_ind(xk2)));
  			}
@@ -351,7 +365,7 @@
 		{
 			for(index_t yk=0; yk<yDim; ++yk)
 			{
-				if(_Data.isXYCorrelated(_helper->x_ind(xk), yk))
+				if(_Fit.isXYCorrelated(_helper->x_ind(xk), yk))
 				{
 					setCov(xk + yDim, yk, _Data.xyCov(_helper->x_ind(xk), yk));
 				}

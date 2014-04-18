@@ -56,8 +56,8 @@
  		}
 
  		// Creation
- 		template<typename... Args>
- 		std::unique_ptr<Product> create(const Identifier& id, Args... args)
+ 		template<typename... ARGS>
+ 		std::unique_ptr<Product> create(const Identifier& id, ARGS... args)
  		{
  			auto i = _FactoryMap.find(id);
  			if(i != _FactoryMap.end())
@@ -65,6 +65,17 @@
  			
  			return this->onUnknownType(id);
  		}
+
+ 	protected:
+ 		Creator& getCreator(const Identifier& id)
+ 		{
+ 			auto i = _FactoryMap.find(id);
+ 			if(i != _FactoryMap.end())
+ 				return i->second;
+ 			
+ 			return this->onUnknownType(id);
+ 		}
+
  	};
 
  }

@@ -13,15 +13,25 @@
  #include "ParametrizedFunction.hpp"
 
  namespace LQCDA {
-
- 	template<typename T>
- 	class Fitter;
+ 	namespace internal {
+	 	template<
+	 	typename T, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+ 		class FitImpl;
+ 	}
 
  	// Fit result
  	template<typename T>
  	class FitResult
  	{
- 		friend class Fitter<T>;
+ 		template<
+	 	typename S, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+	 	friend class internal::FitImpl;
 
  	public:
  		FitResult()

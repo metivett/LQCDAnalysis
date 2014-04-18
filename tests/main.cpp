@@ -1,8 +1,13 @@
 #include "Fit.hpp"
+#include "Minimize.hpp"
 #include "FitResult.hpp"
 #include "Minuit2Minimizer.hpp"
-#include "XYFitData.hpp"
 #include "CostFunction.hpp"
+#include "Sample.hpp"
+#include "MatrixSample.hpp"
+
+#include "DataFile.hpp"
+
 #include <iostream>
 #include <vector>
 #include <type_traits>
@@ -41,76 +46,81 @@ private:
 	}
 };
 
-template<typename T>
- 	std::ostream& operator<<(std::ostream& os, const typename MnMigradMinimizer<T>::Options& opts)
- 	{
- 		os << "MIGRAD options:\n"
- 		<< "\tlevel = " << opts.level << std::endl
- 		<< "\tpre_minimize = " << opts.pre_minimize << std::endl
- 		<< "\ttpre_minimize level = " << opts.pre_min_level << std::endl;
- 	}
-
+// template<typename T>
+// std::ostream& operator<<(
+// 	std::ostream& os, 
+// 	const LQCDA::MIN::Options<LQCDA::MinType::MIGRAD>& opts)
+// {
+// 	os << "MIGRAD options:\n"
+// 	<< "\tlevel = " << opts.level << std::endl
+// 	<< "\tpre_minimize = " << opts.pre_minimize << std::endl
+// 	<< "\tpre_minimize level = " << opts.pre_min_level << std::endl;
+// }
 
 int main() {
-	Line * model = new Line();
-	model->setParameter(0, 3.);
-	XYFitData<double> * data = new XYFitData<double>(5, 1, 1);
-	// data->x(0, {}) << 0.;
-	// data->x(1, {}) << 1.;
-	// data->x(2, {}) << 2.;
-	// data->x(3, {}) << 3.;
-	// data->x(4, {}) << 4.;
-	// data->y(0, {}) << 0.;
-	// data->y(1, {}) << 1.;
-	// data->y(2, {}) << 2.;
-	// data->y(3, {}) << 3.;
-	// data->y(4, {}) << 4.;
-	data->x({}, 0) << 0, 1, 2, 3, 4;
-	data->y({}, 0) << 0, 1, 2, 3, 4;
-	// data->addPoint({0.}, {0.});
-	// data->addPoint({1.}, {1.});
-	// data->addPoint({2.}, {2.});
-	// data->addPoint({3.}, {3.});
-	// data->addPoint({4.}, {4.});
-	// data->addPoint({5.}, {5.});
-	std::vector<double> x {0., 1., 2., 3., 4., 5.};
-	std::vector<double> y {0., 1., 2., 3., 4., 5.};
+	// Line * model = new Line();
+	// model->setParameter(0, 3.);
+	// XYData<double> * data = new XYData<double>(5, 1, 1);
+	// data->x({}, 0) << 0, 1, 2, 3, 4;
+	// data->y({}, 0) << 0, 1, 2, 3, 4;
 
-	std::vector<double> xinit = {0.};
-	// Fitter<double> fitter(*data);
-	// fitter.fit(*model, xinit);
-	auto fit = Fit(*data, *model, xinit);
-	std::cout << fit.cost() << std::endl;
-	std::cout << fit.parameters()[0] << std::endl;
+	// std::vector<double> xinit = {0.};
+	
+	// auto fit = Chi2Fit<double, MIN::MIGRAD>(*data).fit(*model, xinit);
+	// std::cout << fit.cost() << std::endl;
+	// std::cout << fit.parameters()[0] << std::endl;
 
-	// cout << fit<Chi2Fit, MnMigradMinimizer>(model, x, y);
+	// delete model;
+	// delete data;
 
-	// Matrix<double, Dynamic, Dynamic> w(6, 6);
-	// w.setIdentity();
-	// w(2, 2) = 100;
+	// F f;
+	// std::vector<double> x0 {1., 1.};
+	// auto mini = MIN::MakeMinimizer<double, MIN::MIGRAD>();
+	// mini->options().level = 3;
+	// auto result = mini->minimize(f, x0);
+	// std::cout << result.is_valid << std::endl;
+	// std::cout << result.final_cost << std::endl;
 
-	// auto fitter = MakeFitter<YWChi2Fit, MnMigradMinimizer, integral_constant<int, 2>>(data, model);
-	// fitter->setYWeight(&w);
-	// cout << fitter->fit();
-	// delete fitter;
-	delete model;
-	delete data;
+	// Sample<Matrix<double>> s1(10), s2(10);
+	// for(int i=0; i<5; ++i)
+	// {
+	// 	s1[2*i] = Matrix<double>::Identity(2, 2);
+	// 	s1[2*i+1] = Matrix<double>::Zero(2, 2);
+	// 	s2[i] = Matrix<double>::Identity(2, 2);
+	// }
 
-	F f;
-	std::vector<double> x0 {1., 1.};
-	//const MinimizerCreator<LQCDA::MnMigradMinimizer, double, const int> creator(MinimizerType::MIGRAD);
-	//MinimizerFactory<double>::instance().registerId(MinimizerType::MIGRAD, createMigrad);
-	MnMigradMinimizer<double>::Options opts;
-	opts.level = 3;
-	auto result = Minimize(f, x0, MinimizerType::MIGRAD, opts);
-	std::cout << result.is_valid << std::endl;
-	std::cout << result.final_cost << std::endl;
-	// std::cout << result.minimum[0] << ", " << result.minimum[1] << std::endl;
-	//std::cout << - std::numeric_limits<double>::min() << std::endl;
+	// Sample<double> s1(10), s2(10);
+	// for(int i=0; i<10; ++i)
+	// {
+	// 	s1[i] = static_cast<double>(i);
+	// 	s2[i] = static_cast<double>(2*i);
+	// }
 
-	// XYFitData<double> fitdata;
-	// fitdata.resize(2, 2, 2);
-	// Chi2CostFunction<double> chi2(fitdata);
+	// Matrix<double> array [10];
+	// for(int i=0; i<10; ++i)
+	// 	array[i] = Matrix<double>::Identity(3,3);
+
+	// Sample<Matrix<double>&> s1(array, 10, 1);
+	// // s1[0]=array[0].block(0,0,2,2);
+	// Sample<Matrix<double>> s2(2);
+	// s2[0].setIdentity(3, 3);
+	// s2[1].setZero(3, 3);
+
+	// std::cout << s2.size() << std::endl;
+	// std::cout << s2.block(0, 1, 2, 2)[0] << std::endl;
+	
+	// std::cout << s1[0] << std::endl;
+	// s1[0](1,1) = 2.;
+	// std::cout << array[0] << std::endl;
+
+	// std::cout << s1.mean() << std::endl;
+	// std::cout << s1.variance() << std::endl;
+	// std::cout << s1.varianceMatrix() << std::endl;
+	// std::cout << s1.covariance(s2) << std::endl;
+
+	AsciiDataFile file(std::string("test.dat"), 'r');
+	Matrix<double> datamat(file.getData(std::string("test")));
+	std::cout << datamat << std::endl;
 }
 
 

@@ -14,6 +14,7 @@
  #include <string>
  #include <iostream>
  #include <algorithm>
+ #include <memory>
 
  #include "Eigen/Core"
  #include "Eigen/LU"
@@ -81,6 +82,10 @@
  	template<typename Derived>
  	using ConstMap = Eigen::Map<const Derived>;
 
+ 	// dense
+ 	template<typename Derived>
+ 	using DenseExpr = Eigen::DenseBase<Derived>;
+
  	// index type
  	typedef Matrix<double>::Index index_t;
 
@@ -89,11 +94,25 @@
  	for(index_t j = 0; j < m.cols(); ++j) \
  	for(index_t i = 0; i < m.rows(); ++i)
 
+ 	#define FOR_MAT_DIAG(m, i) \
+ 	for(index_t i = 0; i < std::min(m.rows(), m.cols()); ++i)
+
  	#define FOR_VEC(v, i) \
  	for(index_t i = 0; i < v.rows(); ++i)
 
  	#define FOR_ARRAY(a, i) \
  	for(index_t i = 0; i < a.rows(); ++i)
+
+ 	#define EIGEN_EXPR_CTOR(Ctor, Class, Base, ExprType) \
+ 	template<typename Derived> \
+ 		Ctor(const ExprType<Derived>& e): Base(e) {} \
+ 	template<typename Derived> \
+ 		Class& operator=(const ExprType<Derived>& e) \
+ 		{ \
+ 			this->Base::operator=(e); \
+ 			return *this; \
+ 		} \
+
 
 
 /******************************************************************************
@@ -101,9 +120,9 @@
  ******************************************************************************/
 	
 	enum Verbosity {
-		SILENT,
-		NORMAL,
-		DEBUG
+		SILENT = 0,
+		NORMAL = 1,
+		DEBUG = 2
 	};
 
 
@@ -111,41 +130,83 @@
  *                              Minimizer Types                               *
  ******************************************************************************/
 
- 	class MinimizerID
+ 	struct MinimizerType
  	{
- 	private:
- 		const int id;
-
- 	public:
- 		static MinimizerID getNewId()
- 		{
- 			static int global_id = 0;
- 			return MinimizerID(global_id++);
- 		}
-
- 		bool operator<(const MinimizerID& t) const
-	 	{
-	 		return id < t.id;
-	 	}
-	 	bool operator>(const MinimizerID& t) const
-	 	{
-	 		return id > t.id;
-	 	}
-	 	bool operator==(const MinimizerID& t) const
-	 	{
-	 		return id == t.id;
-	 	}
-
- 	private:
- 		MinimizerID(int i)
- 		: id{i}
- 		{}
+ 		virtual int id() const =0;
  	};
 
- 	namespace MinimizerType {
- 		static const MinimizerID DEFAULT = MinimizerID::getNewId();
- 		static const MinimizerID MIGRAD = MinimizerID::getNewId();
+ 	template<int i>
+ 	struct MinimizerID
+ 	: public MinimizerType
+ 	{
+ 		static constexpr int ID = i;
+ 		typedef MinimizerID<i> type;
+ 		virtual int id() const override { return i; }
+ 		constexpr operator int() { return ID; }
+ 	};
+
+ 	namespace MIN {
+ 		typedef MinimizerID<0> DEFAULT_ID;
+ 		typedef MinimizerID<1> MIGRAD_ID;
+
+ 		// static DEFAULT_ID DEFAULT;
+ 		// static MIGRAD_ID MIGRAD;
  	}
+
+ 	// enum class MinimizerType: int
+ 	// {
+ 	// 	DEFAULT,
+ 	// 	MIGRAD
+ 	// };
+
+ 	// bool operator< (const MinimizerType& t1, const MinimizerType& t2)
+ 	// {
+ 	// 	return static_cast<int>(t1) < static_cast<int>(t2);
+ 	// }
+ 	// bool operator> (const MinimizerType& t1, const MinimizerType& t2)
+ 	// {
+ 	// 	return static_cast<int>(t1) > static_cast<int>(t2);
+ 	// }
+ 	// bool operator== (const MinimizerType& t1, const MinimizerType& t2)
+ 	// {
+ 	// 	return static_cast<int>(t1) == static_cast<int>(t2);
+ 	// }
+
+ 	// class MinimizerID
+ 	// {
+ 	// private:
+ 	// 	const int id;
+
+ 	// public:
+ 	// 	static MinimizerID getNewId()
+ 	// 	{
+ 	// 		static int global_id = 0;
+ 	// 		return MinimizerID(global_id++);
+ 	// 	}
+
+ 	// 	bool operator<(const MinimizerID& t) const
+	 // 	{
+	 // 		return id < t.id;
+	 // 	}
+	 // 	bool operator>(const MinimizerID& t) const
+	 // 	{
+	 // 		return id > t.id;
+	 // 	}
+	 // 	bool operator==(const MinimizerID& t) const
+	 // 	{
+	 // 		return id == t.id;
+	 // 	}
+
+ 	// private:
+ 	// 	MinimizerID(int i)
+ 	// 	: id{i}
+ 	// 	{}
+ 	// };
+
+ 	// namespace MinimizerType {
+ 	// 	static const MinimizerID DEFAULT = MinimizerID::getNewId();
+ 	// 	static const MinimizerID MIGRAD = MinimizerID::getNewId();
+ 	// }
 
  }
 

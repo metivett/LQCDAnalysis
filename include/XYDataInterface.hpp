@@ -26,8 +26,18 @@
  		typedef Block<Matrix<T>> block_t;
  		typedef ConstBlock<Matrix<T>> const_block_t;
 
+ 		struct range
+ 		{
+ 			unsigned int r[2];
+ 			unsigned int operator[](unsigned int i) { return r[i]; }
+ 		};
+
  	public:
  		// Accessors
+ 		virtual unsigned int nPoints() const =0;
+ 		virtual unsigned int xDim() const =0;
+ 		virtual unsigned int yDim() const =0;
+
  		virtual T& x(index_t i, index_t k) =0;
  		virtual const T& x(index_t i, index_t k) const =0;
  		virtual block_t x(std::initializer_list<index_t> r1, std::initializer_list<index_t> r2) =0;

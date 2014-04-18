@@ -11,8 +11,11 @@
  #include <string>
  #include <fstream>
  #include <unordered_map>
+ #include <queue>
+ #include <memory>
 
- #include "DataReader.hpp"
+ #include "Globals.hpp"
+ #include "ParserState.hpp"
  #include "Exceptions.hpp"
 
  namespace LQCDA {
@@ -94,14 +97,9 @@
  			APPEND = 1 << 2
  		};
 
- 		struct data_position
- 		{
- 			int pos;
- 			unsigned int len;
- 		};
-
  		// Typedefs
- 		typedef std::unordered_map<std::string, data_position> DataTable;
+ 		typedef Matrix<double> data_block;
+ 		typedef std::unordered_map<std::string, std::unique_ptr<data_block>> DataTable;
 
  	protected:
  		std::string _Name;
@@ -126,34 +124,43 @@
  		virtual void save() =0;
  		virtual void saveAs(const std::string&) =0;
 
- 		template<typename T, typename Reader = DefaultDataReader<T>>
- 		void read(const std::string& s, T& t, unsigned int offset =0);
+ 		// template<typename T, typename Reader = DefaultDataReader<T>>
+ 		// void read(const std::string& s, T& t, unsigned int offset =0);
+ 		const data_block& getData(const std::string& s);
 
  	protected:
- 		FileMode modeFromChar(char c);
+ 		static FileMode modeFromChar(char c);
+ 		static FileMode modeFromString(const char* mode);
+ 		static FileMode modeFromString(const std::string& mode);
 
- 		virtual std::fstream& getFstream() =0;
+ 		virtual std::fstream& getStream() =0;
+
+ 		void resetData();
+
+ 	private:
+ 		virtual std::string load(const std::string& s) =0;
  	};
 
- 	template<typename T, typename Reader>
- 	void DataFile::read(const std::string& s, T& t, unsigned int offset)
- 	{
- 		try {
- 			data_position& data_pos = _Data.at(s);
- 			int pos = data_pos.pos + offset;
- 			int len = data_pos.len - offset;
- 			if(len <= 0)
- 				ERROR(IO, "No data at offset " + utils::strFrom(offset) 
- 					+ " with name " + s + " in file " + _Name);
 
- 			internal::substreambuf ssbuf(getFstream().rdbuf(), pos, len);
- 			std::istream sis(&ssbuf);
- 			Reader::read(t, sis);
- 		}
- 		catch(std::out_of_range) {
- 			ERROR(IO, "No data with name \"" + s + "\" in file " + _Name);
- 		}
- 	}
+ 	// template<typename T, typename Reader>
+ 	// void DataFile::read(const std::string& s, T& t, unsigned int offset)
+ 	// {
+ 	// 	try {
+ 	// 		data_position& data_pos = _Data.at(s);
+ 	// 		int pos = data_pos.pos + offset;
+ 	// 		int len = data_pos.len - offset;
+ 	// 		if(len <= 0)
+ 	// 			ERROR(IO, "No data at offset " + utils::strFrom(offset) 
+ 	// 				+ " with name " + s + " in file " + _Name);
+
+ 	// 		internal::substreambuf ssbuf(getFstream().rdbuf(), pos, len);
+ 	// 		std::istream sis(&ssbuf);
+ 	// 		Reader::read(t, sis);
+ 	// 	}
+ 	// 	catch(std::out_of_range) {
+ 	// 		ERROR(IO, "No data with name \"" + s + "\" in file " + _Name);
+ 	// 	}
+ 	// }
 
 /******************************************************************************
  *                            Ascii DataFile class                            *
@@ -161,8 +168,35 @@
 
  	class AsciiDataFile: public DataFile
  	{
+ 	public:
+ 		class AsciiParserState
+ 		: public ParserState<DataTable>
+ 		{
+ 		public:
+ 			// Constructor
+ 			AsciiParserState(std::istream* is, std::string* streamName, DataTable* data)
+ 			: ParserState<DataTable>(is, streamName, data)
+ 			{
+ 				init_scanner();
+ 			}
+ 			// Destructor
+ 			virtual ~AsciiParserState() noexcept { delete_scanner(); }
+
+ 			// Buffers
+ 			std::queue<double> doubleQueue;
+ 			std::queue<int> intQueue;
+ 			std::queue<Matrix<double>> matrixQueue;
+
+ 		private:
+ 			// Lexer alloc/free
+ 			virtual void init_scanner() override;
+ 			virtual void delete_scanner() override;
+ 		};
+
  	private:
  		std::fstream _FStream;
+ 		bool _isParsed{false};
+ 		std::unique_ptr<AsciiParserState> _ParserState{nullptr};
 
  	public:
  		AsciiDataFile(): DataFile() {}
@@ -180,10 +214,11 @@
  		void openAsciiFile(const std::string& name, FileMode mode);
  		void closeAsciiFile();
 
- 		void parse();
+ 		int parse();
 
  	protected:
- 		virtual std::fstream& getFstream() override;
+ 		virtual std::string load(const std::string& s) override;
+ 		virtual std::fstream& getStream() override;
 
  	};
 

@@ -11,78 +11,80 @@
  #include "Globals.hpp"
  #include "Factory.hpp"
  #include "SingletonHolder.hpp"
+ #include "Minuit2Minimizer.hpp"
 
  #include <iostream>
 
  namespace LQCDA {
+ 	namespace MIN {
 
- 	template<typename T>
- 	class Minimizer;
- 	template<typename T>
- 	class MnMigradMinimizer;
-
- 	template<class M>
- 	class MinimizerCreator
- 	{
- 	public:
- 		static M * create(
- 			const typename Minimizer<typename M::scalar_type>::Options& opts)
+ 		template<class M>
+ 		class MinimizerCreator
  		{
- 			return new M(opts);
+ 		public:
+ 			static M * create()
+ 			{
+	 			return new M();
+ 			}
+ 		};
+
+ 		namespace {
+
+	 		template<typename T>
+ 			class MinimizerFactoryImpl
+ 			: protected utils::Factory
+ 			<
+ 			Minimizer<T>, 
+ 			int,
+ 			std::function< Minimizer<T> * () >
+ 			>
+ 			{
+  			public:
+ 				// Typedefs
+ 				typedef typename utils::Factory
+ 				<
+ 				Minimizer<T>, 
+ 				int,
+ 				std::function< Minimizer<T> * () >
+ 				> factory_type;
+ 				using typename factory_type::product_type;
+ 				using typename factory_type::id_type;
+ 				using typename factory_type::creator_type;
+
+ 			public:
+ 				MinimizerFactoryImpl();
+
+ 				template<typename M>
+ 				bool registerMinimizer(const id_type& id)
+ 				{
+ 					return factory_type::registerId(id, MinimizerCreator<M>::create);
+ 				}
+
+ 				std::unique_ptr<Minimizer<T>> create(
+ 					const MinimizerType& id)
+ 				{
+ 					return factory_type::create(id.id());
+ 				}
+
+ 			};
+
+	 		template<typename T>
+ 			MinimizerFactoryImpl<T>::MinimizerFactoryImpl()
+ 			{
+ 				registerMinimizer<MnMigradMinimizer<T>>(MIGRAD_ID());
+ 			}
  		}
- 	};
 
- 	namespace {
+ 		template<typename T>
+ 		using MinimizerFactory = utils::SingletonHolder<MinimizerFactoryImpl<T>>;
 
-	 	template<typename T>
-	 	class MinimizerFactoryImpl
-	 	: public utils::Factory
-	 	<
-	 	Minimizer<T>, 
-	 	MinimizerID,
-	 	std::function< Minimizer<T> * (const typename Minimizer<T>::Options&) >
-	 	>
-	 	{
-	 	public:
- 			// Typedefs
- 			typedef typename utils::Factory
-				 	<
-				 	Minimizer<T>, 
-				 	MinimizerID,
-				 	std::function< Minimizer<T> * (const typename Minimizer<T>::Options&) >
-				 	> factory_type;
- 			using typename factory_type::product_type;
- 			using typename factory_type::id_type;
- 			using typename factory_type::creator_type;
+ 		template<class M>
+ 		bool RegisterMinimizer(const typename MinimizerFactory<typename M::scalar_type>::singleton_type::id_type & id)
+ 		{
+ 			return MinimizerFactory<typename M::scalar_type>::instance().template registerMinimizer<M>(id);
+ 		}
 
-	 	public:
-	 		MinimizerFactoryImpl();
-
-	 		std::unique_ptr<Minimizer<T>> create(
-	 			const id_type& id, 
-	 			const typename Minimizer<T>::Options& opts)
-	 		{
-	 			return factory_type::template create<const typename Minimizer<T>::Options&>(id, opts);
-	 		}
-
-	 	};
-
-	 	template<typename T>
-	 	MinimizerFactoryImpl<T>::MinimizerFactoryImpl()
-	 	{
-	 		this->registerId(MinimizerType::MIGRAD, MinimizerCreator<MnMigradMinimizer<T>>::create);
-	 	}
  	}
-
- 	template<typename T>
- 	using MinimizerFactory = utils::SingletonHolder<MinimizerFactoryImpl<T>>;
-
- 	template<class M>
- 	bool RegisterMinimizer(const typename MinimizerFactory<typename M::scalar_type>::singleton_type::id_type & id)
- 	{
- 		return MinimizerFactory<typename M::scalar_type>::instance().registerId(id, MinimizerCreator<M>::create);
- 	}
-
  }
 
 #endif // MINIMIZER_FACTORY_HPP

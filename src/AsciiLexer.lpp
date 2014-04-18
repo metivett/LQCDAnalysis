@@ -1,0 +1,87 @@
+/*
+ * AsciiLexer.lpp
+ *
+ *  Created on: Apr 14, 2014
+ *      Author: Thibaut Metivet
+ */
+
+%option reentrant
+/*%option outfile="AsciiLexer.cpp" header-file="AsciiLexer.hpp"*/
+/*%option bison-bridge*/
+/*%option bison-locations*/
+%option noyywrap
+%option yylineno
+%option batch noinput nounput
+
+
+%top{
+#include <string>
+
+#include "DataFile.hpp"
+#include "AsciiParser.hpp"
+
+static yy::location loc;
+
+#define YY_DECL \
+	yy::AsciiParser::symbol_type yylex \
+	(LQCDA::AsciiDataFile::AsciiParserState * state, yyscan_t yyscanner)
+#define YY_EXTRA_TYPE  LQCDA::AsciiDataFile::AsciiParserState*
+#define YY_USER_ACTION loc.columns(yyleng);
+
+#define YY_INPUT(buf, result, max_size) \
+	{ \
+        (*yyextra->stream).read(buf,max_size);\
+        result = (*yyextra->stream).gcount();\
+	}
+
+}
+
+
+WSPACE	[ \t]
+ALPHA	[a-zA-Z_+.-]
+DIGIT	[0-9]
+SIGN	\+|-
+EXP		e|E
+INT		{SIGN}?{DIGIT}+
+FLOAT	{SIGN}?(({DIGIT}+\.{DIGIT}*)|({DIGIT}*\.{DIGIT}+))({EXP}{INT})?
+
+LMARK	#L
+
+%x CMD
+%x DATA
+
+
+%%
+
+%{
+	loc.step();	
+%}
+
+
+<*>{LMARK}					{BEGIN(CMD);}
+<*>{INT}					{return yy::AsciiParser::make_INT(utils::strTo<int>(yytext), loc);}
+<*>{FLOAT}					{return yy::AsciiParser::make_FLOAT(utils::strTo<double>(yytext), loc);}
+<CMD>begin 					{return yy::AsciiParser::make_DBEGIN(loc);}
+<CMD>end 					{BEGIN(INITIAL); return yy::AsciiParser::make_DEND(loc);}
+<CMD>({ALPHA}|{DIGIT})+		{return yy::AsciiParser::make_ID(yytext, loc);}
+<CMD>\n 					{BEGIN(DATA);}
+<DATA>\n 					{loc.lines(yyleng); loc.step(); return yy::AsciiParser::make_NEWLINE(loc);}
+<*>#[^L].*\n				{loc.step();}
+\n 							{loc.lines(yyleng); loc.step();}
+<*>{WSPACE}					{loc.step();}
+<*>.						{return yy::AsciiParser::make_ERROR(yytext, loc);}
+<<EOF>>						{return yy::AsciiParser::make_END(loc);}
+
+
+%%
+
+
+void LQCDA::AsciiDataFile::AsciiParserState::init_scanner()
+{
+	yylex_init_extra(this, &scanner);
+}
+
+void LQCDA::AsciiDataFile::AsciiParserState::delete_scanner()
+{
+	yylex_destroy(scanner);
+}
