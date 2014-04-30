@@ -16,7 +16,8 @@
  	{
  	private:
  		Vector<unsigned int> _isFitPoint, _isXExact;
- 		Array<bool> _isXXCorr, _isYYCorr, _isXYCorr, _isDataCorr;
+ 		Matrix<unsigned int> _isXXCorr, _isYYCorr, _isXYCorr;
+ 		Matrix<unsigned int> _isDataCorr;
  		unsigned int _nPts, _xDim, _yDim;
 
  	public:
@@ -30,6 +31,8 @@
  		void resize(unsigned int npts, unsigned int xdim, unsigned int ydim);
 
  		void fitPoint(const index_t i, const bool b =true);
+ 		void fitPointRange(const index_t i, const index_t j, const bool b =true);
+ 		void fitAllPoints(const bool b =true);
  		void assumeXExact(const index_t i, const bool b =true);
  		void assumeXXCorrelated(const index_t k1, const index_t k2, const bool b =true);
  		void assumeYYCorrelated(const index_t k1, const index_t k2, const bool b =true);

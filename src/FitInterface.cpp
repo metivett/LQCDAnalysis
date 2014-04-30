@@ -16,12 +16,12 @@
 
  void FitInterface::resize(unsigned int npts, unsigned int xdim, unsigned int ydim)
  {
- 	_isFitPoint.setConstant(npts, 1);
+ 	_isFitPoint.setConstant(npts, 0);
  	_isXExact.setConstant(xdim, 1);
- 	_isXXCorr.matrix().setIdentity(xdim, xdim);
- 	_isYYCorr.matrix().setIdentity(ydim, ydim);
+ 	_isXXCorr.setIdentity(xdim, xdim);
+ 	_isYYCorr.setIdentity(ydim, ydim);
  	_isXYCorr.setZero(xdim, ydim);
- 	_isDataCorr.matrix().setIdentity(npts, npts);
+ 	_isDataCorr.setIdentity(npts, npts);
  	_nPts = npts;
  	_xDim = xdim;
  	_yDim = ydim;
@@ -30,6 +30,19 @@
  void FitInterface::fitPoint(const index_t i, const bool b)
  {
  	_isFitPoint(i) = b ? 1 : 0;
+ }
+ void FitInterface::fitPointRange(const index_t i, const index_t j, const bool b)
+ {
+ 	unsigned int len = static_cast<unsigned int>(j - i + 1);
+ 	_isFitPoint.segment(i, len).setConstant(b ? 1 : 0);
+ }
+ void FitInterface::fitAllPoints(const bool b)
+ {
+ 	unsigned int bi = b ? 1 : 0;
+ 	FOR_VEC(_isFitPoint, i)
+ 	{
+ 		_isFitPoint(i) = bi;
+ 	}
  }
  void FitInterface::assumeXExact(const index_t i, const bool b)
  {

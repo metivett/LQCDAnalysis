@@ -202,7 +202,7 @@
  	yy::AsciiParser parser(_ParserState.get());
  	parser.set_debug_level(false);
  	int res = parser.parse();
- 	std::cout << "Parsed " << _Data.size() << " data blocks" << std::endl;
+ 	// std::cout << "Parsed " << _Data.size() << " data blocks" << std::endl;
  	_isParsed = true;
  	return res;
  }

@@ -13,26 +13,28 @@
 
  namespace LQCDA {
 
- 	template<typename T>
+	template<typename T>
  	class XYDataMap
  	: public virtual XYDataInterface<T>
  	{
  	private:
- 		// Typedefs
+	 	// Typedefs
  		typedef typename XYDataInterface<T>::range range;
+ 		typedef typename Map<Matrix<T>>::PointerType PointerType;
 
  	protected:
- 		// Typedefs
- 		typedef typename XYDataInterface<T>::block_t block_t;
- 		typedef typename XYDataInterface<T>::const_block_t const_block_t;
+	 	// Typedefs
+ 		typedef Ref<Matrix<T>> block_t;
+ 		typedef ConstRef<Matrix<T>> const_block_t;
 
- 		// Data
+	 	// Data
  		unsigned int _nPts, _xDim, _yDim;
- 		Map<Matrix<double>> _x, _y;
- 		Matrix<Matrix<double>> * _Cxx, _Cyy, _Cxy;
+ 		Map<Matrix<T>> _x, _y;
+ 		Matrix<Matrix<T>> * _Cxx, * _Cyy, * _Cxy;
 
  	public:
- 		XYDataMap(T* x, T* y, unsigned int npts, unsigned int xdim, unsigned int ydim);
+ 		XYDataMap(PointerType x, PointerType y, unsigned int npts, unsigned int xdim, unsigned int ydim);
+ 		XYDataMap(const XYDataMap<T>& other);
 
  		void setXXCov(Matrix<Matrix<double>> * Cxx);
  		void setYYCov(Matrix<Matrix<double>> * Cyy);
@@ -74,8 +76,10 @@
  		XYDataMap() {}
  	};
 
- 	template<typename T>
- 	XYDataMap<T>::XYDataMap(T* x, T* y, unsigned int npts, unsigned int xdim, unsigned int ydim)
+	template<typename T>
+ 	XYDataMap<T>::XYDataMap(
+ 		XYDataMap<T>::PointerType x, XYDataMap<T>::PointerType y,
+ 		unsigned int npts, unsigned int xdim, unsigned int ydim)
  	: _x(x, npts, xdim)
  	, _y(y, npts, ydim)
  	, _Cxx{nullptr}
@@ -86,23 +90,35 @@
  	, _yDim{ydim}
  	{}
 
- 	template<typename T>
+	template<typename T>
+ 	XYDataMap<T>::XYDataMap(const XYDataMap<T>& other)
+ 	: _x(other._x)
+ 	, _y(other._y)
+ 	, _Cxx{other._Cxx}
+ 	, _Cyy{other._Cyy}
+ 	, _Cxy{other._Cxy}
+ 	, _nPts{other._nPts}
+ 	, _xDim{other._xDim}
+ 	, _yDim{other._yDim}
+ 	{}
+
+	template<typename T>
  	void XYDataMap<T>::setXXCov(Matrix<Matrix<double>> * Cxx)
  	{
  		_Cxx = Cxx;
  	}
 
- 	template<typename T>
-	void XYDataMap<T>::setYYCov(Matrix<Matrix<double>> * Cyy)
-	{
-		_Cyy = Cyy;
-	}
+	template<typename T>
+ 	void XYDataMap<T>::setYYCov(Matrix<Matrix<double>> * Cyy)
+ 	{
+ 		_Cyy = Cyy;
+ 	}
 
 	template<typename T>
-	void XYDataMap<T>::setXYCov(Matrix<Matrix<double>> * Cxy)
-	{
-		_Cxy = Cxy;
-	}
+ 	void XYDataMap<T>::setXYCov(Matrix<Matrix<double>> * Cxy)
+ 	{
+ 		_Cxy = Cxy;
+ 	}
 
 
 	template<typename T>
@@ -110,135 +126,135 @@
  	{
  		return _x(i, k);
  	}
- 	template<typename T>
+	template<typename T>
  	const T& XYDataMap<T>::x(index_t i, index_t k) const
  	{
  		return _x(i, k);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::x(std::initializer_list<index_t> l1, std::initializer_list<index_t> l2)
  	{
  		auto r1 = check_range(l1, _nPts);
  		auto r2 = check_range(l2, _xDim);
  		return _x.block(r1[0], r2[0], r1[1] - r1[0], r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::x(std::initializer_list<index_t> l1, std::initializer_list<index_t> l2) const
  	{
  		auto r1 = check_range(l1, _nPts);
  		auto r2 = check_range(l2, _xDim);
  		return _x.block(r1[0], r2[0], r1[1] - r1[0], r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::x(index_t i, std::initializer_list<index_t> l2)
  	{
  		auto r2 = check_range(l2, _xDim);
  		return _x.block(i, r2[0], 1, r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::x(index_t i, std::initializer_list<index_t> l2) const
  	{
  		auto r2 = check_range(l2, _xDim);
  		return _x.block(i, r2[0], 1, r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::x(std::initializer_list<index_t> l1, index_t k)
  	{
  		auto r1 = check_range(l1, _nPts);
  		return _x.block(r1[0], k, r1[1] - r1[0], 1);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::x(std::initializer_list<index_t> l1, index_t k) const
  	{
  		auto r1 = check_range(l1, _nPts);
  		return _x.block(r1[0], k, r1[1] - r1[0], 1);
  	}
 
- 	template<typename T>
+	template<typename T>
  	T& XYDataMap<T>::y(index_t i, index_t k)
  	{
  		return _y(i, k);
  	}
- 	template<typename T>
+	template<typename T>
  	const T& XYDataMap<T>::y(index_t i, index_t k) const
  	{
  		return _y(i, k);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::y(std::initializer_list<index_t> l1, std::initializer_list<index_t> l2)
  	{
  		auto r1 = check_range(l1, _nPts);
  		auto r2 = check_range(l2, _yDim);
  		return _y.block(r1[0], r2[0], r1[1] - r1[0], r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::y(std::initializer_list<index_t> l1, std::initializer_list<index_t> l2) const
  	{
  		auto r1 = check_range(l1, _nPts);
  		auto r2 = check_range(l2, _yDim);
  		return _y.block(r1[0], r2[0], r1[1] - r1[0], r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::y(index_t i, std::initializer_list<index_t> l2)
  	{
  		auto r2 = check_range(l2, _yDim);
  		return _y.block(i, r2[0], 1, r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::y(index_t i, std::initializer_list<index_t> l2) const
  	{
  		auto r2 = check_range(l2, _yDim);
  		return _y.block(i, r2[0], 1, r2[1] - r2[0]);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::y(std::initializer_list<index_t> l1, index_t k)
  	{
  		auto r1 = check_range(l1, _nPts);
  		return _y.block(r1[0], k, r1[1] - r1[0], 1);
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::y(std::initializer_list<index_t> l1, index_t k) const
  	{
  		auto r1 = check_range(l1, _nPts);
  		return _y.block(r1[0], k, r1[1] - r1[0], 1);
  	}
 
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::xxCov(index_t k1, index_t k2)
  	{
  		if(!_Cxx)
  			ERROR(NULLPTR, "no Cxx matrix provided");
  		return (*_Cxx)(k1, k2).block(0, 0, (*_Cxx)(k1, k2).rows(), (*_Cxx)(k1, k2).cols());
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::xxCov(index_t k1, index_t k2) const
  	{
  		if(!_Cxx)
  			ERROR(NULLPTR, "no Cxx matrix provided");
  		return (*_Cxx)(k1, k2).block(0, 0, (*_Cxx)(k1, k2).rows(), (*_Cxx)(k1, k2).cols());
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::yyCov(index_t k1, index_t k2)
  	{
  		if(!_Cyy)
  			ERROR(NULLPTR, "no Cxx matrix provided");
  		return (*_Cyy)(k1, k2).block(0, 0, (*_Cyy)(k1, k2).rows(), (*_Cyy)(k1, k2).cols());
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::yyCov(index_t k1, index_t k2) const
  	{
  		if(!_Cyy)
  			ERROR(NULLPTR, "no Cxx matrix provided");
  		return (*_Cyy)(k1, k2).block(0, 0, (*_Cyy)(k1, k2).rows(), (*_Cyy)(k1, k2).cols());
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::block_t XYDataMap<T>::xyCov(index_t k1, index_t k2)
  	{
  		if(!_Cxy)
  			ERROR(NULLPTR, "no Cxx matrix provided");
  		return (*_Cxy)(k1, k2).block(0, 0, (*_Cxy)(k1, k2).rows(), (*_Cxy)(k1, k2).cols());
  	}
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::const_block_t XYDataMap<T>::xyCov(index_t k1, index_t k2) const
  	{
  		if(!_Cxy)
@@ -247,11 +263,11 @@
  	}
 
 
- 	template<typename T>
+	template<typename T>
  	typename XYDataMap<T>::range XYDataMap<T>::check_range(std::initializer_list<index_t> r, unsigned int max) const
  	{
  		unsigned int range_size = r.size();
- 		ASSERT(range_size < 2);
+ 		ASSERT(range_size <= 2);
  		range res;
  		switch(range_size) {
  			case 0:
@@ -269,7 +285,7 @@
  		}
  		return res;
  	}
-
  }
+
 
 #endif // XY_DATA_MAP_HPP

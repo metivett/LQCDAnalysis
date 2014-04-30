@@ -87,27 +87,27 @@
  		_Cxx.resize(xdim, xdim);
  		_Cyy.resize(ydim, ydim);
  		_Cxy.resize(xdim, ydim);
- 		FOR_MAT_DIAG(_Cxx, i) {
- 			_Cxx(i, i).setIdentity(npts, npts);
+ 		// FOR_MAT_DIAG(_Cxx, i) {
+ 		// 	_Cxx(i, i).setIdentity(npts, npts);
+ 		// }
+ 		// FOR_MAT_DIAG(_Cyy, i) {
+ 		// 	_Cyy(i, i).setIdentity(npts, npts);
+ 		// }
+ 		FOR_MAT(_Cxx, i, j) {
+ 			if(i == j)
+ 				_Cxx(i, j).setIdentity(npts, npts);
+ 			else
+ 				_Cxx(i, j).setZero(npts, npts);
  		}
- 		FOR_MAT_DIAG(_Cyy, i) {
- 			_Cyy(i, i).setIdentity(npts, npts);
+ 		FOR_MAT(_Cyy, i, j) {
+ 			if(i == j)
+ 				_Cyy(i, j).setIdentity(npts, npts);
+ 			else
+ 				_Cyy(i, j).setZero(npts, npts);
  		}
- 		// FOR_MAT(_Cxx, i, j) {
- 		// 	if(i == j)
- 		// 		_Cxx(i, j).setIdentity(npts, npts);
- 		// 	else
- 		// 		_Cxx(i, j).setZero(npts, npts);
- 		// }
- 		// FOR_MAT(_Cyy, i, j) {
- 		// 	if(i == j)
- 		// 		_Cyy(i, j).setIdentity(npts, npts);
- 		// 	else
- 		// 		_Cyy(i, j).setZero(npts, npts);
- 		// }
- 		// FOR_MAT(_Cxy, i, j) {
- 		// 	_Cxy(i, j).setZero(npts, npts);
- 		// }
+ 		FOR_MAT(_Cxy, i, j) {
+ 			_Cxy(i, j).setZero(npts, npts);
+ 		}
  		_nPts = npts;
  		_xDim = xdim;
  		_yDim = ydim;
@@ -268,7 +268,7 @@
  	typename XYData<T>::range XYData<T>::check_range(std::initializer_list<index_t> r, unsigned int max) const
  	{
  		unsigned int range_size = r.size();
- 		ASSERT(range_size < 2);
+ 		ASSERT(range_size <= 2);
  		range res;
  		switch(range_size) {
  			case 0:

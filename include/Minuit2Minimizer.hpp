@@ -160,6 +160,7 @@
  			result.final_cost = Min.Fval();
  			result.is_valid = Min.IsValid();
  			result.minimum = Min.UserParameters().Params();
+ 			result.errors = Min.UserParameters().Errors();
 
  			if(!Min.IsValid()) {
  				vout(NORMAL) << "Minuit Library reported that minimization result is not valid !\n";

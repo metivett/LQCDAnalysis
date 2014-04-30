@@ -33,38 +33,41 @@
  			struct Options
  			{
  				Verbosity verbosity;
-	 			// const MinimizerType& minimizer_type;
  				bool update_cost_fcn;
 
  				Options()
-	 			// : minimizer_type(MIN::MIGRAD())
+ 				: verbosity{SILENT}
+ 				, update_cost_fcn{true}
  				{}
  			};
+
+ 			// Options
+ 			Options options;
 
  		private:
 	 		// Typedefs
  			typedef ParametrizedScalarFunction<T> ScalarModel;
 
 	 		// XY data
- 			const XYDataInterface<T>& _Data;
+ 			const XYDataInterface<T> * _Data;
 	 		// Cost function
  			std::unique_ptr<COST<T>> _CostFcn;
- 			// Options
- 			Options _Opts;
 	 		// Minimizer
  			std::unique_ptr<MINIMIZER<T>> _Minimizer;
 
  		public:
 	 		// Constructors
+	 		FitImpl();
  			FitImpl(const XYDataInterface<T>& data);
  			FitImpl(const XYDataInterface<T>& data, const std::vector<const ScalarModel *>& model);
 	 		// Destructor
  			virtual ~FitImpl() = default;
 
 	 		// Update
- 			void update();
+ 			// void update();
 
 	 		// Accessors
+	 		void setData(const XYDataInterface<T>& data);
  			void setOptions(const Options& opts);
 
 	 		// Fit method
@@ -76,6 +79,17 @@
  				const std::vector<T>& x0);
  		};
 
+ 		template<
+	 	typename T, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+ 		FitImpl<T, COST, MINIMIZER>::FitImpl()
+ 		: FitInterface()
+ 		, _Data{nullptr}
+ 		, _CostFcn{nullptr}
+ 		{}
+
 	 	template<
 	 	typename T, 
 	 	template<typename> class COST,
@@ -83,7 +97,7 @@
 	 	>
  		FitImpl<T, COST, MINIMIZER>::FitImpl(const XYDataInterface<T>& data)
  		: FitInterface(data.nPoints(), data.xDim(), data.yDim())
- 		, _Data(data)
+ 		, _Data(&data)
  		{}
 
 		template<
@@ -95,9 +109,21 @@
  			const XYDataInterface<T>& data,
  			const std::vector<const ParametrizedScalarFunction<T> *>& model)
  		: FitInterface(data.nPoints(), data.xDim(), data.yDim())
- 		, _Data(data)
- 		, _CostFcn(new Chi2CostFunction<T>(data, model))
+ 		, _Data(&data)
+ 		, _CostFcn(new COST<T>(data, model))
  		{}
+
+ 		template<
+	 	typename T, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+ 		void FitImpl<T, COST, MINIMIZER>::setData(const XYDataInterface<T>& data)
+ 		{
+ 			FitInterface::resize(data.nPoints(), data.xDim(), data.yDim());
+ 			_Data = &data;
+ 			_CostFcn.reset(new COST<T>(*_Data, *this));
+ 		}
 
  		template<
 	 	typename T, 
@@ -106,7 +132,7 @@
 	 	>
  		void FitImpl<T, COST, MINIMIZER>::setOptions(const Options& opts)
  		{
- 			_Opts = opts;
+ 			options = opts;
  		}
 
 	 	template<
@@ -118,19 +144,22 @@
  			const std::vector<const ParametrizedScalarFunction<T> *>& model,
  			const std::vector<T>& x0)
  		{
- 			utils::vostream vout(std::cout, _Opts.verbosity);
+ 			utils::vostream vout(std::cout, options.verbosity);
 	 		// Initialize
+	 		// Check data
+	 		if(!_Data)
+	 			ERROR(NULLPTR, "no data provided");
 	 		// Cost function
  			if(!_CostFcn)
  			{
  				vout(DEBUG) << "Creating cost function...\n";
- 				_CostFcn = std::unique_ptr<COST<T>>(new COST<T>(_Data, *this, model));
+ 				_CostFcn = std::unique_ptr<COST<T>>(new COST<T>(*_Data, *this, model));
  			}
  			else
  			{
- 				vout(DEBUG) << "Updating cost function model...\n";
+ 				vout(DEBUG) << "setting cost function model...\n";
  				_CostFcn->setModel(model);
- 				if(_Opts.update_cost_fcn)
+ 				if(options.update_cost_fcn)
  				{
  					_CostFcn->requestUpdate();
  				}
@@ -139,18 +168,19 @@
  			vout(DEBUG) << "Creating minimizer...\n";
 	 		// _Minimizer = MIN::MinimizerFactory<T>::instance().create(MINIMIZER(), min_opts);
  			_Minimizer = std::unique_ptr<MINIMIZER<T>>(new MINIMIZER<T>);
+ 			_Minimizer->options().verbosity = options.verbosity;
 	 		// Initial parameters
  			std::vector<T> xinit(_CostFcn->xDim());
  			std::copy(x0.begin(), x0.end(), xinit.begin());
  			index_t xk{0}, di{0};
- 			for(index_t k=0; k<_Data.xDim(); ++k)
+ 			for(index_t k=0; k<_Data->xDim(); ++k)
  				if(!this->isXExact(k))
  				{
  					di = 0;
- 					for(index_t i=0; i<_Data.nPoints(); ++i)
+ 					for(index_t i=0; i<_Data->nPoints(); ++i)
  						if(this->isFitPoint(i))
  						{
- 							xinit[_CostFcn->nPar() + xk * this->nFitPoints() + di] = _Data.x(i, k);
+ 							xinit[_CostFcn->nPar() + xk * this->nFitPoints() + di] = _Data->x(i, k);
  							di++;
  						}
  						xk++;
@@ -163,6 +193,7 @@
 			auto min = _Minimizer->minimize(*_CostFcn, xinit);
 
 			result._Params = min.minimum;
+			result._Errors = min.errors;
 			result._Cost = min.final_cost;
 
 			return result;

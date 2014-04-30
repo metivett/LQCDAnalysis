@@ -34,6 +34,13 @@
  	#endif
 
 /******************************************************************************
+ *                                   Macros                                   *
+ ******************************************************************************/
+
+ 	#define BEGIN_NAMESPACE(ns) namespace ns {
+ 	#define END_NAMESPACE }
+
+/******************************************************************************
  *                                 Eigen                                      *
  ******************************************************************************/
 
@@ -82,6 +89,13 @@
  	template<typename Derived>
  	using ConstMap = Eigen::Map<const Derived>;
 
+ 	// ref
+ 	template<typename Derived>
+ 	using Ref = Eigen::Ref<Derived>;
+
+ 	template<typename Derived>
+ 	using ConstRef = Eigen::Ref<const Derived>;
+
  	// dense
  	template<typename Derived>
  	using DenseExpr = Eigen::DenseBase<Derived>;
@@ -91,17 +105,18 @@
 
  	// macros
  	#define FOR_MAT(m, i, j) \
- 	for(index_t j = 0; j < m.cols(); ++j) \
- 	for(index_t i = 0; i < m.rows(); ++i)
+ 	for(index_t j = 0; j < (m).cols(); ++j) \
+ 	for(index_t i = 0; i < (m).rows(); ++i)
 
  	#define FOR_MAT_DIAG(m, i) \
- 	for(index_t i = 0; i < std::min(m.rows(), m.cols()); ++i)
+ 	for(index_t i = 0; i < std::min((m).rows(), (m).cols()); ++i)
 
  	#define FOR_VEC(v, i) \
- 	for(index_t i = 0; i < v.rows(); ++i)
+ 	for(index_t i = 0; i < (v).rows(); ++i)
 
- 	#define FOR_ARRAY(a, i) \
- 	for(index_t i = 0; i < a.rows(); ++i)
+ 	#define FOR_ARRAY(a, i, j) \
+ 	for(index_t j = 0; j < (a).cols(); ++j) \
+ 	for(index_t i = 0; i < (a).rows(); ++i)
 
  	#define EIGEN_EXPR_CTOR(Ctor, Class, Base, ExprType) \
  	template<typename Derived> \

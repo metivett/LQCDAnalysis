@@ -31,6 +31,22 @@
  				}
  			};
  			template<typename T>
+ 			struct cwiseProd_helper
+ 			{
+ 				static T cwiseProd(const T& a, const T& b)
+ 				{
+ 					return a * b;
+ 				}
+ 			};
+ 			template<typename T>
+ 			struct cwiseProd_helper<Matrix<T>>
+ 			{
+ 				static Matrix<T> cwiseProd(const Matrix<T>& a, const Matrix<T>& b)
+ 				{
+ 					return a.cwiseProduct(b);
+ 				}
+ 			};
+ 			template<typename T>
  			struct tensorProd_helper
  			{
  				static typename std::enable_if<std::is_fundamental<T>::value, T>::type 
@@ -88,6 +104,12 @@
  		-> decltype(internal::prod_helper<T>::prod(a, b))
  		{
  			return internal::prod_helper<T>::prod(a, b);
+ 		}
+ 		template<typename T>
+ 		auto cwiseProd(const T& a, const T& b)
+ 		-> decltype(internal::cwiseProd_helper<T>::cwiseProd(a, b))
+ 		{
+ 			return internal::cwiseProd_helper<T>::cwiseProd(a, b);
  		}
  		template<typename T>
  		auto tensorProd(const T& a, const T& b)

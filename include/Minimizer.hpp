@@ -29,6 +29,7 @@
  			struct Result
  			{
  				std::vector<double> minimum;
+ 				std::vector<double> errors;
  				double final_cost;
  				bool is_valid;
  			};

@@ -1,12 +1,4 @@
-#include "Fit.hpp"
-#include "Minimize.hpp"
-#include "FitResult.hpp"
-#include "Minuit2Minimizer.hpp"
-#include "CostFunction.hpp"
-#include "Sample.hpp"
-#include "MatrixSample.hpp"
-
-#include "DataFile.hpp"
+#include "LQCDA.hpp"
 
 #include <iostream>
 #include <vector>
@@ -118,9 +110,19 @@ int main() {
 	// std::cout << s1.varianceMatrix() << std::endl;
 	// std::cout << s1.covariance(s2) << std::endl;
 
-	AsciiDataFile file(std::string("test.dat"), 'r');
-	Matrix<double> datamat(file.getData(std::string("test")));
-	std::cout << datamat << std::endl;
+	XYDataSample<double> sample(1, 1, 1, 2);
+	sample[0].x(0, 0) = 1.;
+	sample[0].y(0, 0) = 2.;
+	sample[1].x(0, 0) = 1.1;
+	sample[1].y(0, 0) = 3;
+	std::cout << sample.yyCov(0, 0) << '\n';
+	FitInterface fitint(24, 1, 1);
+	std::cout << sample.yyCov(0, 0) << '\n';
+	Sample<Matrix<double>> buf1, buf2;
+	buf1 = sample.y({}, 0);
+	buf2 = sample.y({}, 0);
+	std::cout << buf1[0] << '\n' << buf1[1] << '\n';
+	// std::cout << sample.y({}, 0)[0] << '\n' << sample.y({}, 0)[1] << '\n';
 }
 
 

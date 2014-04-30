@@ -212,7 +212,7 @@
  		virtual T operator()(const T * args) const override;
 
  	private:
- 		void setCov(index_t j1, index_t j2, ConstBlock<Matrix<T>> cov) const;
+ 		void setCov(index_t j1, index_t j2, ConstRef<Matrix<T>> cov) const;
  		void update_helper() const;
 
  	};
@@ -283,12 +283,12 @@
 
  		// compute chi2
  		T chi2 = _helper->r.dot(_helper->c_inv * _helper->r);
-
+ 		// std::cout << "chi2 = " << chi2 << '\n';
  		return chi2;
  	}
 
  	template<typename T>
- 	void Chi2CostFunction<T>::setCov(index_t k1, index_t k2, ConstBlock<Matrix<T>> cov) const
+ 	void Chi2CostFunction<T>::setCov(index_t k1, index_t k2, ConstRef<Matrix<T>> cov) const
  	{
  		index_t nFitPoints = _Fit.nFitPoints();
  		FOR_VEC(_helper->d_ind, i1)
@@ -373,8 +373,9 @@
 		}
 
 		// symmetrize
-		_helper->c_inv.block(0, nFitPoints*yDim, nFitPoints*yDim, nFitPoints*nFitXDim) =
-			_helper->c_inv.block(nFitPoints*yDim, 0, nFitPoints*nFitXDim, nFitPoints*yDim).transpose();
+		auto YX = _helper->c_inv.block(0, nFitPoints*yDim, nFitPoints*yDim, nFitPoints*nFitXDim);
+		auto XY = _helper->c_inv.block(nFitPoints*yDim, 0, nFitPoints*nFitXDim, nFitPoints*yDim);
+		YX = XY.transpose().eval();
 
 		// invert
 		_helper->c_inv = _helper->c_inv.inverse().eval();

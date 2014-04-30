@@ -23,9 +23,10 @@
  	{
  	protected:
  		// Typedefs
- 		typedef Block<Matrix<T>> block_t;
- 		typedef ConstBlock<Matrix<T>> const_block_t;
+ 		typedef Ref<Matrix<T>> block_t;
+ 		typedef ConstRef<Matrix<T>> const_block_t;
 
+ 	public:
  		struct range
  		{
  			unsigned int r[2];
