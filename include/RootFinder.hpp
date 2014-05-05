@@ -40,23 +40,23 @@
  	RootFinder() = default;
  	virtual ~RootFinder() =0;
 
- 	Root<T> solve(const ScalarFuntion<T>& f, T xmin, T xmax);
+ 	Root<T> solve(const ScalarFunction<T>& f, T xmin, T xmax, double epsrel =1.e-4);
 
  private:
- 	virtual Root<T> solve_h(const ScalarFuntion<T>& f, T xmin, T xmax) =0;
+ 	virtual Root<T> solve_h(const ScalarFunction<T>& f, T xmin, T xmax, double epsrel) =0;
  };
 
  template<typename T>
  RootFinder<T>::~RootFinder<T>() {}
 
  template<typename T>
- Root<T> RootFinder<T>::solve(const ScalarFuntion<T>& f, T xmin, T xmax)
+ Root<T> RootFinder<T>::solve(const ScalarFunction<T>& f, T xmin, T xmax, double epsrel)
  {
  	if(f.xDim() != 1)
  	{
  		ERROR(SIZE, "root finding only accepts one-dimensional functions");
  	}
- 	return solve_h(f, xmin, xmax);
+ 	return solve_h(f, xmin, xmax, epsrel);
  }
 
  END_NAMESPACE
