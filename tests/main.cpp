@@ -5,6 +5,7 @@
 #include <type_traits>
 
 using namespace LQCDA;
+using namespace PLOT;
 //using namespace std;
 //using namespace ROOT::Minuit2;
 
@@ -50,79 +51,11 @@ private:
 // }
 
 int main() {
-	// Line * model = new Line();
-	// model->setParameter(0, 3.);
-	// XYData<double> * data = new XYData<double>(5, 1, 1);
-	// data->x({}, 0) << 0, 1, 2, 3, 4;
-	// data->y({}, 0) << 0, 1, 2, 3, 4;
-
-	// std::vector<double> xinit = {0.};
-	
-	// auto fit = Chi2Fit<double, MIN::MIGRAD>(*data).fit(*model, xinit);
-	// std::cout << fit.cost() << std::endl;
-	// std::cout << fit.parameters()[0] << std::endl;
-
-	// delete model;
-	// delete data;
-
-	// F f;
-	// std::vector<double> x0 {1., 1.};
-	// auto mini = MIN::MakeMinimizer<double, MIN::MIGRAD>();
-	// mini->options().level = 3;
-	// auto result = mini->minimize(f, x0);
-	// std::cout << result.is_valid << std::endl;
-	// std::cout << result.final_cost << std::endl;
-
-	// Sample<Matrix<double>> s1(10), s2(10);
-	// for(int i=0; i<5; ++i)
-	// {
-	// 	s1[2*i] = Matrix<double>::Identity(2, 2);
-	// 	s1[2*i+1] = Matrix<double>::Zero(2, 2);
-	// 	s2[i] = Matrix<double>::Identity(2, 2);
-	// }
-
-	// Sample<double> s1(10), s2(10);
-	// for(int i=0; i<10; ++i)
-	// {
-	// 	s1[i] = static_cast<double>(i);
-	// 	s2[i] = static_cast<double>(2*i);
-	// }
-
-	// Matrix<double> array [10];
-	// for(int i=0; i<10; ++i)
-	// 	array[i] = Matrix<double>::Identity(3,3);
-
-	// Sample<Matrix<double>&> s1(array, 10, 1);
-	// // s1[0]=array[0].block(0,0,2,2);
-	// Sample<Matrix<double>> s2(2);
-	// s2[0].setIdentity(3, 3);
-	// s2[1].setZero(3, 3);
-
-	// std::cout << s2.size() << std::endl;
-	// std::cout << s2.block(0, 1, 2, 2)[0] << std::endl;
-	
-	// std::cout << s1[0] << std::endl;
-	// s1[0](1,1) = 2.;
-	// std::cout << array[0] << std::endl;
-
-	// std::cout << s1.mean() << std::endl;
-	// std::cout << s1.variance() << std::endl;
-	// std::cout << s1.varianceMatrix() << std::endl;
-	// std::cout << s1.covariance(s2) << std::endl;
-
-	XYDataSample<double> sample(1, 1, 1, 2);
-	sample[0].x(0, 0) = 1.;
-	sample[0].y(0, 0) = 2.;
-	sample[1].x(0, 0) = 1.1;
-	sample[1].y(0, 0) = 3;
-	std::cout << sample.yyCov(0, 0) << '\n';
-	FitInterface fitint(24, 1, 1);
-	std::cout << sample.yyCov(0, 0) << '\n';
-	Sample<Matrix<double>> buf1, buf2;
-	buf1 = sample.y({}, 0);
-	buf2 = sample.y({}, 0);
-	std::cout << buf1[0] << '\n' << buf1[1] << '\n';
-	// std::cout << sample.y({}, 0)[0] << '\n' << sample.y({}, 0)[1] << '\n';
+	Array<double, Dynamic, 2> xy(4, 2);
+	xy << 1., 1., 2., 2., 3., 3., 4., 4.;
+	GracePlot plot;
+	plot.graph(0) << PlotXY(xy);
+	plot.display();
 }
 
 

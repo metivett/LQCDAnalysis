@@ -18,6 +18,9 @@ LIBS += -L$(UTILS_DIR) -lutils
 SRC = 								\
 	DataFile.cpp					\
 	FitInterface.cpp				\
+	GracePlotRenderer.cpp			\
+	Graph.cpp						\
+	Plot.cpp						\
 	Random.cpp
 
 LEX_SRC =							\
@@ -38,7 +41,10 @@ HEADERS = 							\
 	FitResult.hpp					\
 	Function.hpp					\
 	FunctionInterpolator.hpp		\
+	GSLRootFinder.hpp				\
 	Globals.hpp						\
+	GracePlot.hpp					\
+	Graph.hpp						\
 	IOObject.hpp					\
 	LinalgUtils.hpp					\
 	MatrixSample.hpp				\
@@ -48,9 +54,12 @@ HEADERS = 							\
 	Minuit2Minimizer.hpp			\
 	ParametrizedFunction.hpp		\
 	ParserState.hpp					\
+	Plot.hpp						\
+	PlotObject.hpp					\
+	PlotRenderer.hpp				\
 	Random.hpp						\
 	Reduction.hpp					\
-	RootSolver.hpp					\
+	RootFinder.hpp					\
 	Sample.hpp						\
 	StaticFunction.hpp				\
 	StaticParametrizedFunction.hpp	\
