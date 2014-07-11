@@ -18,11 +18,7 @@ LIBS += -L$(UTILS_DIR) -lutils
 SRC = 								\
 	DataFile.cpp					\
 	FitInterface.cpp				\
-	GracePlotRenderer.cpp			\
-	Graph.cpp						\
-	Plot.cpp						\
-	PlotModifier.cpp				\
-	Random.cpp
+	Random.cpp						
 
 LEX_SRC =							\
 	AsciiLexer.lpp

@@ -18,13 +18,13 @@
  		typename Minimizer<T>::Result Minimize(
  			const ScalarFunction<T>& F, 
  			const std::vector<T>& x0,
- 			const Options<MINIMIZER>& opts)
+ 			const typename MINIMIZER<T>::OptionsType& opts)
  		{
  			return MINIMIZER<T>(opts).minimize(F, x0);
  		}
 
  		template<typename T, template<typename> class MINIMIZER>
- 		std::unique_ptr<MINIMIZER<T>> MakeMinimizer(const Options<MINIMIZER>& opts)
+ 		std::unique_ptr<MINIMIZER<T>> MakeMinimizer(const typename MINIMIZER<T>::OptionsType& opts)
  		{
  			return std::unique_ptr<MINIMIZER<T>>(new MINIMIZER<T>(opts));
  		}
