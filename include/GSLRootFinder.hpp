@@ -36,7 +36,7 @@
 
  template<typename T>
  GSLRootFinder<T>::GSLRootFinder(gsl_root_fsolver* solver)
- : _Solver(solver)
+ : _Solver(solver, gsl_root_fsolver_free)
  {}
 
  template<typename T>
@@ -56,7 +56,7 @@
  		{
  			return (*static_cast<const ScalarFunction<T>*>(p))(x);
  		};
- 	fun.params = &f;
+ 	fun.params = const_cast<ScalarFunction<T>*>(&f);
 
  	gsl_root_fsolver_set(_Solver.get(), &fun, x_lo, x_hi);
 
@@ -67,6 +67,7 @@
 
  		x_lo = gsl_root_fsolver_x_lower(_Solver.get());
  		x_hi = gsl_root_fsolver_x_upper(_Solver.get());
+ 		
  		status = gsl_root_test_interval(x_lo, x_hi, 0., epsrel);
 
  	} while(status == GSL_CONTINUE && iter < max_iter);
@@ -86,7 +87,7 @@
 
  template<typename T> 
  BrentRootFinder<T>::BrentRootFinder()
- : GSLRootFinder<T>(gsl_root_fsolver_alloc(gsl_root_fsolver_brent), gsl_root_fsolver_free)
+ : GSLRootFinder<T>(gsl_root_fsolver_alloc(gsl_root_fsolver_brent))
  {}
 
 

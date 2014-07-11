@@ -11,6 +11,7 @@
  #include <string>
  #include <sstream>
  #include <iostream>
+ #include <memory>
 
 
 /******************************************************************************
@@ -21,11 +22,26 @@
 
  namespace utils {
 
- 	template<typename T>
- 	std::string strFrom(T x)
+ 	namespace {
+ 		template<class T>
+ 		void print(std::ostringstream& os, T&& t)
+ 		{
+ 			os << std::forward<T>(t);
+ 		}
+ 		template<class T, class... Ts>
+ 		void print(std::ostringstream& os, T&& t, Ts&&... ts)
+ 		{
+ 			os << std::forward<T>(t);
+ 			print(os, std::forward<Ts>(ts)...);
+ 		}
+ 	}
+
+ 	template<typename... Ts>
+ 	std::string strFrom(Ts... x)
  	{
  		std::ostringstream oss;
- 		oss << x;
+ 		// oss << x;
+ 		print(oss, x...);
  		return oss.str();
  	}
 
@@ -36,6 +52,12 @@
  		std::istringstream iss(str);
  		iss >> res;
  		return res;
+ 	}
+
+ 	template<typename T, typename ...Args>
+ 	std::unique_ptr<T> make_unique( Args&& ...args )
+ 	{
+ 		return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
  	}
 
  }

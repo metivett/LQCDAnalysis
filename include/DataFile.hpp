@@ -20,67 +20,67 @@
 
  namespace LQCDA {
 
- 	namespace internal {
- 		class substreambuf: public std::streambuf
- 		{
- 		private:
- 			std::streambuf * _SBuf;
- 			std::streampos _Pos;
- 			std::streamsize _Len;
- 			std::streampos _Read;
+ 	// namespace internal {
+ 	// 	class substreambuf: public std::streambuf
+ 	// 	{
+ 	// 	private:
+ 	// 		std::streambuf * _SBuf;
+ 	// 		std::streampos _Pos;
+ 	// 		std::streamsize _Len;
+ 	// 		std::streampos _Read;
 
- 		public:
- 			substreambuf(std::streambuf * sbuf, int pos, unsigned int len)
- 			: _SBuf(sbuf)
- 			, _Pos(pos)
- 			, _Len(len)
- 			, _Read(0)
- 			{
- 				_SBuf->pubseekpos(pos);
- 				setbuf(NULL, 0);
- 			}
+ 	// 	public:
+ 	// 		substreambuf(std::streambuf * sbuf, int pos, unsigned int len)
+ 	// 		: _SBuf(sbuf)
+ 	// 		, _Pos(pos)
+ 	// 		, _Len(len)
+ 	// 		, _Read(0)
+ 	// 		{
+ 	// 			_SBuf->pubseekpos(pos);
+ 	// 			setbuf(NULL, 0);
+ 	// 		}
 
- 		protected:
- 			std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way,
- 				std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
- 				switch(way) {
- 					case std::ios_base::beg:
- 					off += _Pos;
- 					break;
- 					case std::ios_base::cur:
- 					off += _Pos + _Read;
- 					break;
- 					case std::ios_base::end:
- 					off += _Pos + _Len;
- 					break;
- 				}
+ 	// 	protected:
+ 	// 		std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way,
+ 	// 			std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
+ 	// 			switch(way) {
+ 	// 				case std::ios_base::beg:
+ 	// 				off += _Pos;
+ 	// 				break;
+ 	// 				case std::ios_base::cur:
+ 	// 				off += _Pos + _Read;
+ 	// 				break;
+ 	// 				case std::ios_base::end:
+ 	// 				off += _Pos + _Len;
+ 	// 				break;
+ 	// 			}
 
- 				return _SBuf->pubseekpos(off, which) - _Pos;
- 			}
+ 	// 			return _SBuf->pubseekpos(off, which) - _Pos;
+ 	// 		}
 
- 			std::streampos seekpos(std::streampos sp,
- 				std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
- 				sp += _Pos;
- 				if(sp > _Pos + _Len)
- 					return -1;
+ 	// 		std::streampos seekpos(std::streampos sp,
+ 	// 			std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
+ 	// 			sp += _Pos;
+ 	// 			if(sp > _Pos + _Len)
+ 	// 				return -1;
 
- 				return _SBuf->pubseekpos(sp, which) - _Pos;
- 			}
+ 	// 			return _SBuf->pubseekpos(sp, which) - _Pos;
+ 	// 		}
 
- 			int underflow() {
- 				if(_Read >= _Len)
- 					return traits_type::eof();
- 				return _SBuf->sgetc();
- 			}
+ 	// 		int underflow() {
+ 	// 			if(_Read >= _Len)
+ 	// 				return traits_type::eof();
+ 	// 			return _SBuf->sgetc();
+ 	// 		}
 
- 			int uflow() {
- 				if(_Read >= _Len)
- 					return traits_type::eof();
- 				_Read += 1;
- 				return _SBuf->snextc();
- 			}
- 		};
- 	}
+ 	// 		int uflow() {
+ 	// 			if(_Read >= _Len)
+ 	// 				return traits_type::eof();
+ 	// 			_Read += 1;
+ 	// 			return _SBuf->snextc();
+ 	// 		}
+ 	// 	};
+ 	// }
  	
 /******************************************************************************
  *                            Base DataFile class                             *

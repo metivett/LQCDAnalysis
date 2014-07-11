@@ -21,6 +21,7 @@ SRC = 								\
 	GracePlotRenderer.cpp			\
 	Graph.cpp						\
 	Plot.cpp						\
+	PlotModifier.cpp				\
 	Random.cpp
 
 LEX_SRC =							\
@@ -28,6 +29,9 @@ LEX_SRC =							\
 
 YACC_SRC =							\
 	AsciiParser.ypp
+
+UTILS_SRC =							\
+	Exceptions.cpp
 
 HEADERS = 							\
 	CostFunction.hpp				\
@@ -55,7 +59,9 @@ HEADERS = 							\
 	ParametrizedFunction.hpp		\
 	ParserState.hpp					\
 	Plot.hpp						\
+	PlotModifier.hpp				\
 	PlotObject.hpp					\
+	PlotOptions.hpp					\
 	PlotRenderer.hpp				\
 	Random.hpp						\
 	Reduction.hpp					\
@@ -72,6 +78,7 @@ HEADERS = 							\
 OBJ = $(SRC:.cpp=.o)
 LEX_OBJ = $(LEX_SRC:.lpp=.o)
 YACC_OBJ = $(YACC_SRC:.ypp=.o)
+UTILS_OBJ = $(addprefix $(UTILS_DIR), $(UTILS_SRC:.cpp=.o))
 OBJ_FILES = $(LEX_OBJ) $(YACC_OBJ) $(OBJ)
 
 
