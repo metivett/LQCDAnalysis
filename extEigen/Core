@@ -1,0 +1,25 @@
+/*
+ * Core
+ *
+ *  Created on: Jul 15, 2014
+ *      Author: Thibaut Metivet
+ * 
+ *  Plugin header for Eigen Core
+ */
+
+// Forward declare some classes
+namespace Eigen {
+
+template<int Step>
+class IndexRange;
+template<typename XprType, int ViewRows, int ViewCols, int RowStride, int ColStride>
+class MatrixViewRange;
+
+}
+
+#include <extEigen/IndexRange.hpp>
+
+#define EIGEN_DENSEBASE_PLUGIN "extEigen/MatrixViewMethods.hpp"
+#include <Eigen/Core>
+
+#include <extEigen/MatrixViewRange.hpp>

@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "Eigen/Core"
+#include "extEigen/Core"
 #include "Eigen/LU"
 #include "Utilities.hpp"
 #include "IO.hpp"
