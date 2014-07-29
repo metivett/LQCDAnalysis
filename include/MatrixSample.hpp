@@ -84,6 +84,10 @@
  		private:
  			// Typedefs
  			typedef typename S::Scalar Scalar;
+ 			typedef typename 
+ 				if_<std::is_const<S>::value, 
+ 				const typename S::NestedType, typename S::NestedType>::result NestedType;
+ 			typedef typename std::remove_const<S>::type NonConstSType;
 
  		private:
  			// Data
@@ -95,10 +99,19 @@
  			ScalarSampleImpl(
  				S& s, 
  				const index_t i, const index_t j);
+ 			ScalarSampleImpl(ScalarSampleImpl<NonConstSType> & b);
+ 			ScalarSampleImpl(ScalarSampleImpl<NonConstSType> && b);
  			// Destructor
  			~ScalarSampleImpl() = default;
+ 			// Assignment
+ 			ScalarSampleImpl<S>& operator=(const S& sample);
+ 			ScalarSampleImpl<S>& operator=(const S&& sample);
+ 			ScalarSampleImpl<S>& operator=(const Sample<Scalar>& sample);
+ 			ScalarSampleImpl<S>& operator=(const Sample<Scalar>&& sample);
 
  			// Accessors
+ 			S& sample();
+ 			const S& sample() const;
  			unsigned int size() const;
 
  			// Operators
@@ -582,7 +595,68 @@
  	, _i(i)
  	, _j(j)
  	{}
+ 	template<typename T>
+	template<typename S>
+ 	Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType> & b)
+ 	: _Sample(b.sample())
+ 	, _i(b._i)
+ 	, _j(b._j)
+ 	{}
+ 	template<typename T>
+	template<typename S>
+ 	Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType> && b)
+ 	: ScalarSampleImpl(b)
+ 	{}
 
+ 	template<typename T>
+	template<typename S>
+	Sample<Matrix<T>>::ScalarSampleImpl<S>& Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S& sample)
+	{
+		FOR_SAMPLE(_Sample, s)
+ 		{
+ 			_Sample[s].block(_i, _j, 1, 1) = sample[s];
+ 		}
+
+ 		return *this;
+	}
+ 	template<typename T>
+	template<typename S>
+	Sample<Matrix<T>>::ScalarSampleImpl<S>& Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S&& sample)
+	{
+		*this = sample;
+ 		return *this;
+	}
+ 	template<typename T>
+	template<typename S>
+	Sample<Matrix<T>>::ScalarSampleImpl<S>& Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar>& sample)
+	{
+		FOR_SAMPLE(_Sample, s)
+ 		{
+ 			_Sample[s](_i, _j) = sample[s];
+ 		}
+
+ 		return *this;
+	}
+ 	template<typename T>
+	template<typename S>
+	Sample<Matrix<T>>::ScalarSampleImpl<S>& Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar>&& sample)
+	{
+		*this = sample;
+ 		return *this;
+	}
+
+	template<typename T>
+	template<typename S>
+ 	S& Sample<Matrix<T>>::ScalarSampleImpl<S>::sample()
+ 	{
+ 		return _Sample;
+ 	}
+ 	template<typename T>
+	template<typename S>
+ 	const S& Sample<Matrix<T>>::ScalarSampleImpl<S>::sample() const
+ 	{
+ 		return _Sample;
+ 	}
  	template<typename T>
 	template<typename S>
  	unsigned int Sample<Matrix<T>>::ScalarSampleImpl<S>::size() const 

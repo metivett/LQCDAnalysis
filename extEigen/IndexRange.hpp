@@ -66,12 +66,12 @@ IndexRange<Step> Range(int b, int e)
 	return IndexRange<Step>(b, e);
 }
 
-IndexRange<> Range(int b, int e)
+inline IndexRange<> Range(int b, int e)
 {
 	return IndexRange<>(b, e);
 }
 
-IndexRange<Dynamic> Range(int b, int e, int s)
+inline IndexRange<Dynamic> Range(int b, int e, int s)
 {
 	return IndexRange<Dynamic>(b, e, s);
 }
