@@ -70,7 +70,15 @@
 	 		void setData(const XYDataInterface<T>& data);
  			void setOptions(const Options& opts);
 
-	 		// Fit method
+	 		// Fit methods
+ 			FitResult<T> fit(
+ 				const std::vector<const ParametrizedScalarFunction<T> *>& model,
+ 				const std::vector<T>& x0,
+ 				const std::vector<ScalarConstraint<T>>& c);
+ 			FitResult<T> fit(
+ 				const ParametrizedScalarFunction<T> & model,
+ 				const std::vector<T>& x0,
+ 				const std::vector<ScalarConstraint<T>>& c);
  			FitResult<T> fit(
  				const std::vector<const ParametrizedScalarFunction<T> *>& model,
  				const std::vector<T>& x0);
@@ -142,7 +150,8 @@
 	 	>
  		FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
  			const std::vector<const ParametrizedScalarFunction<T> *>& model,
- 			const std::vector<T>& x0)
+ 			const std::vector<T>& x0,
+ 			const std::vector<ScalarConstraint<T>>& c)
  		{
  			utils::vostream vout(std::cout, options.verbosity);
 	 		// Initialize
@@ -169,9 +178,11 @@
 	 		// _Minimizer = MIN::MinimizerFactory<T>::instance().create(MINIMIZER(), min_opts);
  			_Minimizer = std::unique_ptr<MINIMIZER<T>>(new MINIMIZER<T>);
  			_Minimizer->options().verbosity = options.verbosity;
-	 		// Initial parameters
+	 		// Initial parameters and constraints
  			std::vector<T> xinit(_CostFcn->xDim());
+ 			std::vector<ScalarConstraint<T>> constraints(_CostFcn->xDim());
  			std::copy(x0.begin(), x0.end(), xinit.begin());
+ 			std::copy(c.begin(), c.end(), constraints.begin());
  			index_t xk{0}, di{0};
  			for(index_t k=0; k<_Data->xDim(); ++k)
  				if(!this->isXExact(k))
@@ -190,11 +201,12 @@
 			FitResult<T> result;
 			result._nDOF = _CostFcn->nDOF();
 
-			auto min = _Minimizer->minimize(*_CostFcn, xinit);
+			auto min = _Minimizer->minimize(*_CostFcn, xinit, constraints);
 
 			result._Params = min.minimum;
 			result._Errors = min.errors;
 			result._Cost = min.final_cost;
+			result._isValid = min.is_valid;
 
 			return result;
 		}
@@ -206,11 +218,36 @@
 	 	>
 		FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
 			const ParametrizedScalarFunction<T> & model,
-			const std::vector<T>& x0)
+			const std::vector<T>& x0,
+			const std::vector<ScalarConstraint<T>>& c)
 		{
 			std::vector<const ParametrizedScalarFunction<T> *> vmodel(1);
 			vmodel[0] = &model;
-			return fit(vmodel, x0);
+			return fit(vmodel, x0, c);
+		}
+
+		template<
+	 	typename T, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+ 		FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
+ 			const std::vector<const ParametrizedScalarFunction<T> *>& model,
+ 			const std::vector<T>& x0)
+ 		{
+ 			return fit(model, x0, std::vector<ScalarConstraint<T>>(x0.size()));
+ 		}
+
+ 		template<
+	 	typename T, 
+	 	template<typename> class COST,
+	 	template<typename> class MINIMIZER
+	 	>
+		FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
+			const ParametrizedScalarFunction<T> & model,
+			const std::vector<T>& x0)
+		{
+			return fit(model, x0, std::vector<ScalarConstraint<T>>(x0.size()));
 		}
 
 	 } // namespace internal

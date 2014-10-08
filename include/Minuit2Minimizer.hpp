@@ -102,7 +102,8 @@ public:
 	// Minimize
 	virtual typename Minimizer<T>::Result minimize(
 		const ScalarFunction<T>& F,
-		const std::vector<T>& x0) override;
+		const std::vector<T>& x0,
+		const std::vector<ScalarConstraint<T>>& c) override;
 
 };
 
@@ -112,7 +113,8 @@ using MIGRAD = MnMigradMinimizer<T>;
 template<typename T>
 typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
 	const ScalarFunction<T>& F, 
-	const std::vector<T>& x0)
+	const std::vector<T>& x0,
+	const std::vector<ScalarConstraint<T>>& c)
 {
 	utils::vostream vout(std::cout, _Opts.verbosity);
 	vout(NORMAL) << "Minimizing with Minuit2 MIGRAD minimizer\n";
@@ -120,7 +122,16 @@ typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
 	// LQCDA::MIN::operator<< <T>(vout(NORMAL), _Opts) << std::endl;
 
 	vout(NORMAL) << "Initial parameters:\n";
-	ROOT::Minuit2::MnUserParameters params(x0, std::vector<T>(x0.size(), 0.1));
+	std::vector<T> e0(x0.size(), 0.1);
+	// for_each(e0.begin(), e0.end(), [](T& x){x*=0.01;});
+	ROOT::Minuit2::MnUserParameters params(x0, e0);
+	for(int i=0; i<c.size(); i++)
+	{
+		if(c[i].hasLowerBound())
+			params.SetLowerLimit(i, c[i].lowerBound());
+		if(c[i].hasUpperBound())
+			params.SetUpperLimit(i, c[i].upperBound());
+	}
 	vout(NORMAL) << params << std::endl;
 
 	auto MnF = new Mn2FCNWrapper(F);

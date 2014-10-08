@@ -10,6 +10,7 @@
 
  #include "Globals.hpp"
  #include "Function.hpp"
+ #include "ScalarConstraint.hpp"
 
 BEGIN_NAMESPACE(LQCDA)
 BEGIN_NAMESPACE(MIN)
@@ -53,7 +54,7 @@ public:
 
 	// Typedefs
 	typedef MinimizerOptions OptionsType;
-	typedef T scalar_type;
+	typedef T Scalar;
 
 public:
 	// Destructor
@@ -64,9 +65,21 @@ public:
 
 	// Minimize
 	virtual Result minimize(
-		const ScalarFunction<scalar_type>& F, 
-		const std::vector<scalar_type>& x0) =0;
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0,
+		const std::vector<ScalarConstraint<Scalar>>& c) =0;
+	Result minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0);
 };
+
+template<typename T>
+typename Minimizer<T>::Result Minimizer<T>::minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0)
+{
+	return minimize(F, x0, std::vector<ScalarConstraint<Scalar>>(x0.size()));
+}
 
 template<typename T>
 std::ostream& operator<< (std::ostream& out, const typename Minimizer<T>::Result& result)
