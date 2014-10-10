@@ -42,7 +42,7 @@
 #include "RootFinder.hpp"				
 #include "Sample.hpp"	
 #include "ScalarConstraint.hpp"				
-#include "StaticFunction.hpp"	
+// #include "StaticFunction.hpp"	
 #include "Statistics.hpp"		
 // #include "StaticParametrizedFunction.hpp"
 #include "TypeTraits.hpp"				
