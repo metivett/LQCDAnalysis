@@ -9,9 +9,69 @@
 #define META_PROG_UTILS_HPP
 
 #include <utility>
+#include <functional>
+#include "TypeTraits.hpp"
 
 namespace LQCDA {
+
+template<typename ... Ps>
+struct pack {};
+
+template<typename P, typename Pack, std::size_t N>
+struct make_pack_hlp;
+template<typename P, typename ... Ps, std::size_t N>
+struct make_pack_hlp<P, pack<Ps...>, N>
+{
+	typedef typename make_pack_hlp<P, pack<Ps..., P>, N-1>::result result;
+};
+template<typename P, typename ... Ps>
+struct make_pack_hlp<P, pack<Ps...>, 0>
+{
+	typedef pack<Ps...> result;
+};
+template<typename P, std::size_t N>
+struct make_pack
+{
+	typedef typename make_pack_hlp<P, pack<>, N>::result result;
+};
+
+
+template<std::size_t C, typename T, typename... Pack>
+struct pack_count_hlp;
+template<std::size_t C, typename T, typename P0, typename... Ps>
+struct pack_count_hlp<C, T, P0, Ps...>
+{
+	static constexpr std::size_t value = pack_count_hlp<(std::size_t)std::is_same<T, P0>::value + C, T, Ps...>::value;
+};
+template<std::size_t C, typename T, typename P>
+struct pack_count_hlp<C, T, P>
+: std::integral_constant<std::size_t, (std::size_t)std::is_same<T, P>::value>
+{};
+template<typename T, typename... Pack>
+struct pack_count
+{
+	static constexpr std::size_t value = pack_count_hlp<0, T, Pack...>::value;
+};
+
+
+template<std::size_t C, typename... Pack>
+struct pack_count_placeholders_hlp;
+template<std::size_t C, typename P0, typename... Ps>
+struct pack_count_placeholders_hlp<C, P0, Ps...>
+{
+	static constexpr std::size_t value = pack_count_placeholders_hlp<(bool)std::is_placeholder<P0>::value + C, Ps...>::value;
+};
+template<std::size_t C, typename P>
+struct pack_count_placeholders_hlp<C, P>
+: std::integral_constant<std::size_t, (bool)std::is_placeholder<P>::value + C>
+{};
+template<typename... Pack>
+struct pack_count_placeholders
+{
+	static constexpr std::size_t value = pack_count_placeholders_hlp<0, Pack...>::value;
+};
 	
+
 template<std::size_t...>
 struct int_seq {};
 
