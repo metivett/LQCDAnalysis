@@ -158,7 +158,7 @@ struct MinimizerID
 	static constexpr int ID = i;
 	typedef MinimizerID<i> type;
 	virtual int id() const override { return i; }
-	constexpr operator int() { return ID; }
+	constexpr operator int() const { return ID; }
 };
 
 namespace MIN {
