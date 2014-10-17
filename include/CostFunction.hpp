@@ -13,6 +13,7 @@
 #include "Globals.hpp"
 #include "XYDataInterface.hpp"
 #include "FitInterface.hpp"
+#include "Function.hpp"
 #include "ParametrizedFunction.hpp"
 
 BEGIN_NAMESPACE(LQCDA)

@@ -31,7 +31,7 @@ private:
     unsigned int _xDim;
 
     template<typename BoundF, typename... Ps>
-    StaticScalarFunction<T(Ps...)> bind_hlp(BoundF F, pack<Ps...>) const;
+    StaticScalarFunction<T(Ps...)> bind_hlp(BoundF F, METAPROG::pack<Ps...>) const;
 
 public:
     // Constructors/Destructor
@@ -45,7 +45,7 @@ public:
     {
         return _xDim;
     }
-    unsigned int yDim() const
+    static unsigned int yDim()
     {
         return 1;
     }
@@ -67,12 +67,10 @@ public:
     -> decltype(bind_hlp(std::bind(
                              &ScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
                              , this, std::forward<Args>(args)...)
-                         , typename make_pack<T, pack_count_placeholders<Args...>::value>::result()));
-
-private:
-    void checkXdim(unsigned int xdim) const;
+                         , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()));
 
 protected:
+    void checkXdim(unsigned int xdim) const;
     void setXDim(unsigned int xdim)
     {
         _xDim = xdim;
@@ -103,45 +101,25 @@ public:
     {}
 
     using ScalarFunction<T>::operator();
-
-private:
-    virtual T operator() (const T *x) const override
-    {
-        return call_f(x, typename make_int_seq<0, sizeof...(Args)>::type());
+    template<typename... Ts>
+    T operator()(const Ts...x) const { 
+        static_assert(sizeof...(x) == sizeof...(Args), "wrong number of arguments provided"); 
+        return _Fcn(x...); 
     }
 
+protected:
+    virtual T operator() (const T *x) const override
+    {
+        return call_f(x, typename METAPROG::make_int_seq<0, sizeof...(Args)>::type());
+    }
+
+private:
     template<std::size_t... s>
-    T call_f(const T *x, int_seq<s...>) const
+    T call_f(const T *x, METAPROG::int_seq<s...>) const
     {
         return _Fcn(std::forward<Args>(const_cast < Args && > (x[s]))...);
     }
 };
-
-// template<typename T>
-// class StaticScalarFunction
-//     : public virtual ScalarFunction<T>
-// {
-// private:
-//     // Typedefs
-//     typedef std::function<T(const T *)> fcn_type;
-
-// private:
-//     fcn_type _Fcn;
-
-// public:
-//     StaticScalarFunction(fcn_type f, unsigned int xdim)
-//         : ScalarFunction<T>(xdim)
-//         , _Fcn(f)
-//     {}
-
-//     using ScalarFunction<T>::operator();
-
-// private:
-//     virtual T operator() (const T *x) const override
-//     {
-//         return _Fcn(x);
-//     }
-// };
 
 
 
@@ -204,7 +182,7 @@ StaticScalarFunction<T()> ScalarFunction<T>::bind(const Vector<T> &x) const
 
 template<typename T >
 template<typename BoundF, typename... Ps>
-StaticScalarFunction<T(Ps...)> ScalarFunction<T>::bind_hlp(BoundF F, pack<Ps...>) const
+StaticScalarFunction<T(Ps...)> ScalarFunction<T>::bind_hlp(BoundF F, METAPROG::pack<Ps...>) const
 {
     return StaticScalarFunction<T(Ps...)>(F);
 }
@@ -216,13 +194,13 @@ auto ScalarFunction<T>::bind(Args... args) const
 -> decltype(bind_hlp(std::bind(
                          &ScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
                          , this, std::forward<Args>(args)...)
-                     , typename make_pack<T, pack_count_placeholders<Args...>::value>::result()))
+                     , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()))
 {
     return bind_hlp(
                std::bind(
                    &ScalarFunction<T>::operator()< typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result... >
                    , this, std::forward<Args>(args)...)
-               , typename make_pack<T, pack_count_placeholders<Args...>::value>::result());
+               , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result());
 }
 
 

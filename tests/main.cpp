@@ -17,6 +17,7 @@ public:
         : ParametrizedScalarFunction<double>(1, 1)
     {}
 
+    using LQCDA::ParametrizedScalarFunction<double>::operator();
     virtual double operator()(const double *x, const double *p) const
     {
         return 2.*(*p) * (*x);
@@ -105,23 +106,19 @@ int main()
     // cout << m.view(Eigen::Range<2>(0, 2), Eigen::Range<2>(0, 2)) << endl << endl;
     // cout << m.view(0, Eigen::Range<2>(0, 2)) << endl << endl;
     // cout << m.view(Eigen::Range<2>(0, 2), 1) << endl << endl;
-    //
-    F myF;
-    std::vector<double> p = {1., 2.};
-    cout << myF(p) << endl;
-    // auto mySF = MakeStaticScalarFunction(f);
-    // cout << mySF(1., 1.) << endl;
-    // auto myBoundF = std::bind(static_cast<double(ScalarFunction<double>::*)(const double*) const>(&ScalarFunction<double>::operator()), myF, p);
-    // auto myBoundF = std::bind(&ScalarFunction<double>::operator()< double, double >, myF, std::placeholders::_1, 1.);
-    auto myBoundF = myF.bind(std::placeholders::_2, std::placeholders::_1);
-    // auto myBoundF = myF.bind(1, 1);
-    double d = myBoundF(2., 1.);
-    cout << d << endl;
-    // cout << pack_count_placeholders<decltype(std::placeholders::_1), double>::value << endl;
-    // cout << or_<std::is_assignable<double &, const std::_Placeholder<1> &>::value, (bool)std::is_placeholder<const std::_Placeholder<1> &>::value>::value << endl;
-    // cout << std::is_assignable<double &, const std::_Placeholder<1> &>::value << endl;
-    // cout << std::is_placeholder<const std::_Placeholder<1> &>::value << endl;
-    // cout << is_ph(std::forward<decltype(std::placeholders::_1)>(std::placeholders::_1) << endl;
+    
+    // F myF;
+    // std::vector<double> p = {1., 2.};
+    // cout << myF(p) << endl;
+    // auto myBoundF = myF.bind(std::placeholders::_2, std::placeholders::_1);
+    // double d = myBoundF(2., 1.);
+    // cout << d << endl;
+    
+    // Line myLine;
+    // const double x = 1., p = 2.;
+    // cout << myLine(&x, &p) << endl;
+    // auto myBoundLine = myLine.bind(std::placeholders::_1, 2);
+    // cout << myBoundLine(1) << endl;
 }
 
 

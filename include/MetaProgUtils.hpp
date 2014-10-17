@@ -11,8 +11,11 @@
 #include <utility>
 #include <functional>
 #include "TypeTraits.hpp"
+#include "Globals.hpp"
 
-namespace LQCDA {
+BEGIN_NAMESPACE(LQCDA)
+
+BEGIN_NAMESPACE(METAPROG)
 
 template<typename ... Ps>
 struct pack {};
@@ -202,6 +205,7 @@ IndexBind_t<I, F, Arg> index_bind(F&& f, Arg&& x) {
 	return IndexBind_t<I, F, Arg>(std::forward<F>(f), std::forward<Arg>(x));
 }
 
-}
+END_NAMESPACE // METAPROG
+END_NAMESPACE // LQCDA
 
 #endif // META_PROG_UTILS_HPP
