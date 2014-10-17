@@ -1,4 +1,5 @@
-#include "LQCDA.hpp"
+// #include "LQCDA.hpp"
+#include "Function.hpp"
 
 #include <iostream>
 #include <vector>
@@ -9,69 +10,59 @@ using namespace LQCDA;
 using namespace std;
 //using namespace ROOT::Minuit2;
 
-class Line
-    : public LQCDA::ParametrizedScalarFunction<double>
-{
-public:
-    Line()
-        : ParametrizedScalarFunction<double>(1, 1)
-    {}
-
-    using LQCDA::ParametrizedScalarFunction<double>::operator();
-    virtual double operator()(const double *x, const double *p) const
-    {
-        return 2.*(*p) * (*x);
-    }
-};
-
-class F
-    : public LQCDA::ScalarFunction<double>
-{
-public:
-    F()
-        : ScalarFunction<double>(2)
-    {}
-
-    using ScalarFunction<double>::operator();
-
-public:
-    virtual double operator()(const double *x) const override
-    {
-        double x2 = x[0] * x[0] + x[1] * x[1];
-        return x2 - 2 * x[0] + exp(x[1]) + 10.;
-    }
-};
-
-class FF
-{
-public:
-    FF()
-    {}
-
-public:
-    virtual double operator()(const double *x) const
-    {
-        double x2 = x[0] * x[0] + x[1] * x[1];
-        return x2 - 2 * x[0] + exp(x[1]) + 10.;
-    }
-};
-
-// template<typename T>
-// std::ostream& operator<<(
-//  std::ostream& os,
-//  const LQCDA::MIN::Options<LQCDA::MinType::MIGRAD>& opts)
+// class Line
+//     : public LQCDA::ParametrizedScalarFunction<double>
 // {
-//  os << "MIGRAD options:\n"
-//  << "\tlevel = " << opts.level << std::endl
-//  << "\tpre_minimize = " << opts.pre_minimize << std::endl
-//  << "\tpre_minimize level = " << opts.pre_min_level << std::endl;
-// }
+// public:
+//     Line()
+//         : ParametrizedScalarFunction<double>(1, 1)
+//     {}
+
+//     using LQCDA::ParametrizedScalarFunction<double>::operator();
+//     virtual double operator()(const double *x, const double *p) const
+//     {
+//         return 2.*(*p) * (*x);
+//     }
+// };
+
+// class F
+//     : public LQCDA::ScalarFunction<double>
+// {
+// public:
+//     F()
+//         : ScalarFunction<double>(2)
+//     {}
+
+//     using ScalarFunction<double>::operator();
+
+// public:
+//     virtual double operator()(const double *x) const override
+//     {
+//         double x2 = x[0] * x[0] + x[1] * x[1];
+//         return x2 - 2 * x[0] + exp(x[1]) + 10.;
+//     }
+// };
+
+// class FF
+// {
+// public:
+//     FF()
+//     {}
+
+// public:
+//     virtual double operator()(const double *x) const
+//     {
+//         double x2 = x[0] * x[0] + x[1] * x[1];
+//         return x2 - 2 * x[0] + exp(x[1]) + 10.;
+//     }
+// };
 
 double f(double a, double b)
 {
     double x2 = a * a + b * b;
     return x2 - 2 * a + exp(b) + 10.;
 }
+
 
 int main()
 {
@@ -119,6 +110,11 @@ int main()
     // cout << myLine(&x, &p) << endl;
     // auto myBoundLine = myLine.bind(std::placeholders::_1, 2);
     // cout << myBoundLine(1) << endl;
+    
+    auto myF = Function<double(double, double)>(f);
+    cout << myF(1, 2) << endl;
+    auto myBoundF = myF.bind(1, std::placeholders::_1);
+    cout << myBoundF(2) << endl;
 }
 
 

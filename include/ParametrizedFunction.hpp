@@ -21,8 +21,67 @@ BEGIN_NAMESPACE(LQCDA)
  *                           Parametrized Function                            *
  ******************************************************************************/
 
-template<typename Signature>
-class StaticParametrizedScalarFunction;
+template<typename T, int XDIM, int YDIM, int NPAR>
+class ParametrizedFunction;
+
+// Forward declarations
+// Scalar ParametrizedFunction
+template<typename T, unsigned int XDIM, unsigned int NPAR>
+class ParametrizedFunction<T, XDIM, 1, NPAR>;
+template<typename T, unsigned int XDIM>
+class ParametrizedFunction<T, XDIM, 1, Dynamic>;
+template<typename T, unsigned int NPAR>
+class ParametrizedFunction<T, Dynamic, 1, NPAR>;
+template<typename T>
+class ParametrizedFunction<T, Dynamic, 1, Dynamic>;
+
+// Static scalar parametrized function specialization
+template<typename T, unsigned int XDIM, unsigned int NPAR>
+class ParametrizedFunction<T, XDIM, 1, NPAR>
+{
+public:
+    // Constructors/Destructor
+    ParametrizedFunction() = default;
+    virtual ~ParametrizedFunction() = default;
+
+    // Accessors
+    static constexpr unsigned int xDim()
+    {
+        return XDIM;
+    }
+    static constexpr unsigned int yDim()
+    {
+        return 1;
+    }
+    static constexpr unsigned int nPar()
+    {
+        return NPAR;
+    }
+
+    // Evaluators
+    virtual T operator()(const T *x, const T *p) const = 0;
+    T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
+    T operator()(const Vector<T> &x, const Vector<T> &p) const;
+    template<typename... Ts>
+    T operator()(const Ts...x) const;
+
+    // Binders
+    Function<T()> bind(const std::vector<T> &x, const std::vector<T> &p) const;
+    Function<T()> bind(const Vector<T> &x, const Vector<T> &p) const;
+    Function<T()> bindParameters(const std::vector<T> &p) const;
+    Function<T()> bindParameters(const Vector<T> &p) const;
+    template < typename... Args,
+               typename = typename std::enable_if <are_assignable_or_placeholders<T, Args...>::value>::type>
+    auto bind(Args... args) const
+    -> decltype(
+        bind_hlp(
+            std::bind(
+                &Function<T, XDIM, 1>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
+                , this, std::forward<Args>(args)...
+            )
+            , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()
+        ));
+};
 
 template<typename T>
 class ParametrizedScalarFunction
