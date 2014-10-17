@@ -21,33 +21,69 @@ BEGIN_NAMESPACE(LQCDA)
  *                           Parametrized Function                            *
  ******************************************************************************/
 
-template<typename Signature>
-class StaticParametrizedScalarFunction;
+template<typename T, int XDIM, int YDIM, int NPAR>
+class ParametrizedFunction;
 
+// Forward declarations
+// Scalar ParametrizedFunction
+template<typename T, unsigned int XDIM, unsigned int NPAR>
+class ParametrizedFunction<T, XDIM, 1, NPAR>;
+template<typename T, unsigned int XDIM>
+class ParametrizedFunction<T, XDIM, 1, Dynamic>;
+template<typename T, unsigned int NPAR>
+class ParametrizedFunction<T, Dynamic, 1, NPAR>;
 template<typename T>
-class ParametrizedScalarFunction
+class ParametrizedFunction<T, Dynamic, 1, Dynamic>;
+
+// Static scalar parametrized function specialization with static parameters
+template<typename T, unsigned int XDIM, unsigned int NPAR>
+class ParametrizedFunction<T, XDIM, 1, NPAR>
 {
-private:
-    unsigned int m_xDim;
-    unsigned int m_nPar;
-
-    template<typename BoundF, typename... Ps>
-    StaticScalarFunction<T(Ps...)> bind_hlp(BoundF F, METAPROG::pack<Ps...>) const;
-
 public:
     // Constructors/Destructor
-    explicit ParametrizedScalarFunction(unsigned int xdim, unsigned int npar)
-        : m_xDim(xdim)
-        , m_nPar(npar)
-    {}
-    virtual ~ParametrizedScalarFunction() noexcept = default;
+    ParametrizedFunction() = default;
+    virtual ~ParametrizedFunction() = default;
 
     // Accessors
-    unsigned int xDim() const
+    static constexpr unsigned int xDim()
     {
-        return m_xDim;
+        return XDIM;
     }
-    unsigned int yDim() const
+    static constexpr unsigned int yDim()
+    {
+        return 1;
+    }
+    static constexpr unsigned int nPar()
+    {
+        return NPAR;
+    }
+
+    // Evaluators
+    virtual T operator()(const T *x, const T *p) const = 0;
+    T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
+    T operator()(const Vector<T> &x, const Vector<T> &p) const;
+    template<typename... Ts>
+    T operator()(const Ts...x) const;
+
+};
+
+// Static scalar parametrized function specialization with dynamic parameters
+template<typename T, unsigned int XDIM>
+class ParametrizedFunction<T, XDIM, 1, Dynamic>
+{
+public:
+    // Constructors/Destructor
+    ParametrizedFunction(unsigned int npar)
+    : m_nPar(npar)
+    {}
+    virtual ~ParametrizedFunction() = default;
+
+    // Accessors
+    static constexpr unsigned int xDim()
+    {
+        return XDIM;
+    }
+    static constexpr unsigned int yDim()
     {
         return 1;
     }
@@ -60,28 +96,152 @@ public:
     virtual T operator()(const T *x, const T *p) const = 0;
     T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
     T operator()(const Vector<T> &x, const Vector<T> &p) const;
-    template<typename... Ts
-             >
+    template<typename... Ts>
     T operator()(const Ts...x) const;
 
-    // Bind
-    StaticScalarFunction<T()> bind(const std::vector<T> &x, const std::vector<T> &p) const;
-    StaticScalarFunction<T()> bind(const Vector<T> &x, const Vector<T> &p) const;
-    template < typename... Args,
-               typename = typename std::enable_if <
-                   and_< or_<std::is_assignable<T &, Args>::value, (bool)std::is_placeholder<Args>::value>::value... >::value>::type>
-    auto bind(Args... args) const
-    -> decltype(bind_hlp(std::bind(
-                             &ParametrizedScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
-                             , this, std::forward<Args>(args)...)
-                         , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()));
+private:
+    // number of parameters
+    unsigned int m_nPar;
+};
+
+// Dynamic scalar parametrized function specialization with static parameters
+template<typename T, unsigned int NPAR>
+class ParametrizedFunction<T, Dynamic, 1, NPAR>
+{
+public:
+    // Constructors/Destructor
+    ParametrizedFunction(unsigned int xdim)
+    : m_xDim(xdim)
+    {}
+    virtual ~ParametrizedFunction() = default;
+
+    // Accessors
+    unsigned int xDim() const
+    {
+        return m_xDim;
+    }
+    static constexpr unsigned int yDim()
+    {
+        return 1;
+    }
+    static constexpr unsigned int nPar()
+    {
+        return NPAR;
+    }
+
+    // Evaluators
+    virtual T operator()(const T *x, const T *p) const = 0;
+    T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
+    T operator()(const Vector<T> &x, const Vector<T> &p) const;
+    template<typename... Ts>
+    T operator()(const Ts...x) const;
 
 private:
-    void checkXdim(unsigned int xdim) const;
-    void checkParIndex(unsigned int i) const;
-    void checkNpar(unsigned int n) const;
+    // x dimension
+    unsigned int m_xDim;
+};
+
+// Dynamic scalar parametrized function specialization with dynamic parameters
+template<typename T>
+class ParametrizedFunction<T, Dynamic, 1, Dynamic>
+{
+public:
+    // Constructors/Destructor
+    ParametrizedFunction(unsigned int xdim, unsigned int npar)
+    : m_xDim(xdim)
+    , m_nPar(npar)
+    {}
+    virtual ~ParametrizedFunction() = default;
+
+    // Accessors
+    unsigned int xDim() const
+    {
+        return m_xDim;
+    }
+    static constexpr unsigned int yDim()
+    {
+        return 1;
+    }
+    unsigned int nPar() const
+    {
+        return m_nPar;
+    }
+
+    // Evaluators
+    virtual T operator()(const T *x, const T *p) const = 0;
+    T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
+    T operator()(const Vector<T> &x, const Vector<T> &p) const;
+    template<typename... Ts>
+    T operator()(const Ts...x) const;
+
+private:
+    // x dimension
+    unsigned int m_xDim;
+    // number of parameters
+    unsigned int m_nPar;
 
 };
+
+
+
+// template<typename T>
+// class ParametrizedScalarFunction
+// {
+// private:
+//     unsigned int m_xDim;
+//     unsigned int m_nPar;
+
+//     template<typename BoundF, typename... Ps>
+//     StaticScalarFunction<T(Ps...)> bind_hlp(BoundF F, METAPROG::pack<Ps...>) const;
+
+// public:
+//     // Constructors/Destructor
+//     explicit ParametrizedScalarFunction(unsigned int xdim, unsigned int npar)
+//         : m_xDim(xdim)
+//         , m_nPar(npar)
+//     {}
+//     virtual ~ParametrizedScalarFunction() noexcept = default;
+
+//     // Accessors
+//     unsigned int xDim() const
+//     {
+//         return m_xDim;
+//     }
+//     unsigned int yDim() const
+//     {
+//         return 1;
+//     }
+//     unsigned int nPar() const
+//     {
+//         return m_nPar;
+//     }
+
+//     // Evaluators
+//     virtual T operator()(const T *x, const T *p) const = 0;
+//     T operator()(const std::vector<T> &x, const std::vector<T> &p) const;
+//     T operator()(const Vector<T> &x, const Vector<T> &p) const;
+//     template<typename... Ts
+//              >
+//     T operator()(const Ts...x) const;
+
+//     // Bind
+//     StaticScalarFunction<T()> bind(const std::vector<T> &x, const std::vector<T> &p) const;
+//     StaticScalarFunction<T()> bind(const Vector<T> &x, const Vector<T> &p) const;
+//     template < typename... Args,
+//                typename = typename std::enable_if <
+//                    and_< or_<std::is_assignable<T &, Args>::value, (bool)std::is_placeholder<Args>::value>::value... >::value>::type>
+//     auto bind(Args... args) const
+//     -> decltype(bind_hlp(std::bind(
+//                              &ParametrizedScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
+//                              , this, std::forward<Args>(args)...)
+//                          , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()));
+
+// private:
+//     void checkXdim(unsigned int xdim) const;
+//     void checkParIndex(unsigned int i) const;
+//     void checkNpar(unsigned int n) const;
+
+// };
 
 
 /******************************************************************************
