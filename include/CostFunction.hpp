@@ -24,7 +24,7 @@ BEGIN_NAMESPACE(LQCDA)
 
 template<typename T>
 class CostFunction
-    : public ScalarFunction<T>
+    : public ScalarFunction<T, Dynamic>
 {
 protected:
     // Typedefs
@@ -67,7 +67,7 @@ template<typename T>
 CostFunction<T>::CostFunction(
     const XYDataInterface<T> &data,
     const FitInterface &fit)
-    : ScalarFunction<T>(0)
+    : ScalarFunction<T, Dynamic>(0)
     , _Data(data)
     , _Fit(fit)
     , _Model(data.yDim(), nullptr)
@@ -79,7 +79,7 @@ CostFunction<T>::CostFunction(
     const XYDataInterface<T> &data,
     const FitInterface &fit,
     const std::vector<const ParametrizedScalarFunction<T> *> &model)
-    : ScalarFunction<T>(0)
+    : ScalarFunction<T, Dynamic>(0)
     , _Data(data)
     , _Fit(fit)
     , _Model(data.yDim(), nullptr)

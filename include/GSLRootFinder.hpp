@@ -54,7 +54,7 @@
  	gsl_function fun;
  	fun.function = [](double x, void * p)->double
  		{
- 			return (*static_cast<const ScalarFunction<T>*>(p))(x);
+ 			return (*static_cast<const ScalarFunction<T>*>(p))(&x);
  		};
  	fun.params = const_cast<ScalarFunction<T>*>(&f);
 

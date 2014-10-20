@@ -1,5 +1,6 @@
 // #include "LQCDA.hpp"
 #include "Function.hpp"
+#include "GSLRootFinder.hpp"
 
 #include <iostream>
 #include <vector>
@@ -63,6 +64,11 @@ double f(double a, double b)
     return x2 - 2 * a + exp(b) + 10.;
 }
 
+double g(double x)
+{
+    return x - 1.;
+}
+
 
 int main()
 {
@@ -113,8 +119,12 @@ int main()
     
     auto myF = Function<double(double, double)>(f);
     cout << myF(1, 2) << endl;
-    auto myBoundF = myF.bind(1, std::placeholders::_1);
+    auto myBoundF = LQCDA::bind(myF, 1, std::placeholders::_1);
     cout << myBoundF(2) << endl;
+
+    LQCDA::Roots::BrentRootFinder<double> brf;
+    auto root = brf.solve(Function<double(double)>(g), 0., 2.);
+    cout << root.value() << endl;
 }
 
 

@@ -54,10 +54,11 @@
  {
  	if(f.xDim() != 1)
  	{
- 		ERROR(SIZE, "root finding only accepts one-dimensional functions");
+ 		ERROR(SIZE, "root finding only accepts xDim=1 functions");
  	}
  	return solve_h(f, xmin, xmax, epsrel);
  }
+
 
  END_NAMESPACE
  END_NAMESPACE

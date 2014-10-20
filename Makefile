@@ -2,10 +2,12 @@ CC = g++
 LEX = flex
 YACC = bison -y
 
+CURRENT_DIR=$(CURDIR)
+
 CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++11 -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
 LIB_NAME = libLQCDAnalysis.so
 
-INCLUDES = -I/home/thibaut/workspace/LQCDAnalysis/include -I/home/thibaut/workspace/LQCDAnalysis/utils/include -I/home/thibaut/workspace/LQCDAnalysis
+INCLUDES = -I$(CURRENT_DIR)/include -I$(CURRENT_DIR)/utils/include -I$(CURRENT_DIR)
 LIBS = -lgsl -lmgl -lMinuit2
 
 SRC_DIR = src
@@ -18,10 +20,10 @@ LIBS += -L$(UTILS_DIR) -lutils
 SRC = 								\
 	DataFile.cpp					\
 	FitInterface.cpp				\
-	GracePlotRenderer.cpp			\
-	Graph.cpp						\
-	Plot.cpp						\
-	PlotModifier.cpp				\
+	# GracePlotRenderer.cpp			\
+	# Graph.cpp						\
+	# Plot.cpp						\
+	# PlotModifier.cpp				\
 	Random.cpp
 
 LEX_SRC =							\

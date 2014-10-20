@@ -1,17 +1,19 @@
 CC = clang
 LD = g++
 
+CURRENT_DIR=$(CURDIR)
+
 CFLAGS = -O2 -std=c++11
 LDFLAGS = -fopenmp
 
 INCLUDES = -I.
 INCLUDES += -I/usr/local/include/
-INCLUDES += -I/home/thibaut/workspace/LQCDAnalysis/include
-INCLUDES += -I/home/thibaut/workspace/LQCDAnalysis/
-INCLUDES += -I/home/thibaut/workspace/LQCDAnalysis/utils/include
+INCLUDES += -I$(CURRENT_DIR)/../include
+INCLUDES += -I$(CURRENT_DIR)/..
+INCLUDES += -I$(CURRENT_DIR)/../utils/include
 
-LIBS = -L"/home/thibaut/workspace/LQCDAnalysis/" -lLQCDAnalysis
-LIBS += -L"/home/thibaut/workspace/LQCDAnalysis/utils" -lutils
+LIBS = -L$(CURRENT_DIR)/.. -lLQCDAnalysis
+LIBS += -L$(CURRENT_DIR)/../utils -lutils
 LIBS += -lMinuit2
 LIBS += -lboost_program_options
 LIBS += -lgsl -lgslcblas

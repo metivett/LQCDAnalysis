@@ -2,7 +2,9 @@ CC = g++
 
 CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++11 -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
 
-INCLUDES = -I/home/thibaut/workspace/LQCDAnalysis/include -I/home/thibaut/workspace/LQCDAnalysis/utils/include -I/home/thibaut/workspace/LQCDAnalysis
+CURRENT_DIR=$(CURDIR)
+
+INCLUDES = -I$(CURRENT_DIR)/../include -I$(CURRENT_DIR)/include -I$(CURRENT_DIR)/..
 LIBS = -lgsl -lmgl
 
 LIB_NAME = libutils.so
