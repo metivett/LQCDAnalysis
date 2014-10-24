@@ -19,94 +19,18 @@ BEGIN_NAMESPACE(LQCDA)
 
 
 /******************************************************************************
- *                                  Function                                  *
+ *                               ScalarFunction                               *
  ******************************************************************************/
 
-// Generic Function template
-template<typename S, int... DIMS>
-class Function;
-
-// Generic scalar function
+// Generic Scalar function
 template<typename T>
 class ScalarFunction
 {
-public:
-    // Accessor
-    virtual unsigned int xDim() const =0;
-    // Evaluator
-    virtual T operator()(const T* x) const =0;
-};
+public: // Constructors/Destructor
+    explicit ScalarFunction(const unsigned int xdim = 0);
+    virtual ~ScalarFunction() = default;
 
-// Generic BindReturnTypeHelper
-template<typename S, int... DIMS>
-struct BindReturnTypeHelper;
-
-// Forward declarations
-// Scalar Function
-template<typename T, unsigned int XDIM>
-class Function<T, XDIM, 1>;
-template<typename T>
-class Function<T, Dynamic, 1>;
-template<typename T, typename... ARGS>
-class Function<T(ARGS...)>;
-// BindReturnTypeHelper
-template<typename T, unsigned int XDIM>
-struct BindReturnTypeHelper<T, XDIM, 1>;
-template<typename T>
-struct BindReturnTypeHelper<T, Dynamic, 1>;
-template<typename T, typename... ARGS>
-struct BindReturnTypeHelper<T(ARGS...)>;
-
-
-// Static scalar function specialization
-template<typename T, unsigned int XDIM>
-class Function<T, XDIM, 1>
-: public ScalarFunction<T>
-{
-private:
-    // Metaprog utility struct for bind arguments
-    template<typename U, typename... Args>
-    struct are_assignable_or_placeholders
-    : and_< or_<std::is_assignable<U &, Args>::value, (bool)std::is_placeholder<Args>::value>::value ... >
-    {};
-
-public:
-    // Constructors/Destructor
-    Function() = default;
-    virtual ~Function() = default;
-
-    // Accessors
-    virtual unsigned int xDim() const
-    {
-        return XDIM;
-    }
-    static constexpr unsigned int yDim()
-    {
-        return 1;
-    }
-
-    // Evaluators
-    using ScalarFunction<T>::operator();
-    T operator()(const std::vector<T> &x) const;
-    T operator()(const Vector<T> &x) const;
-    template<typename... Ts>
-    T operator()(const Ts...x) const;
-
-};
-
-// Dynamic scalar function specialization
-template<typename T>
-class Function<T, Dynamic, 1>
-: public ScalarFunction<T>
-{
-public:
-    // Constructors/Destructor
-    Function(unsigned int xdim)
-        : m_xDim(xdim)
-    {}
-    virtual ~Function() = default;
-
-    // Accessors
+public: // Queries
     virtual unsigned int xDim() const
     {
         return m_xDim;
@@ -116,185 +40,329 @@ public:
         return 1;
     }
 
-    // Evaluators
-    using ScalarFunction<T>::operator();
+public: // Evaluators
+    virtual T operator()(const T *x) const = 0;
     T operator()(const std::vector<T> &x) const;
     T operator()(const Vector<T> &x) const;
+    template<typename... Ts, typename = typename std::enable_if<are_assignable<T &, Ts...>::value>::type>
+    T operator()(const Ts...x) const;
 
-private:
-    // check xdim == m_xDim
+protected: // Assignment
+    void setXDim(const unsigned int xdim);
+
+private: // Utility functions
     void checkXdim(unsigned int xdim) const;
 
-private:
-    // x dimension
+private: // Data
     unsigned int m_xDim;
 };
 
-// Static scalar C/C++ function wrapping specialization
+// Dynamic Scalar function
+template<typename T>
+class SFunction
+    : public ScalarFunction<T>
+{
+private: // Typedefs
+    typedef std::function<T(const T *)> function_type;
+
+public: // Constructors/Destructor
+    explicit SFunction(const unsigned int xdim = 0,
+                       const function_type &f = nullptr);
+    virtual ~SFunction() = default;
+
+public: // Assignment
+    void setFunction(const function_type &f, const unsigned int xdim);
+
+public: // Queries
+    using ScalarFunction<T>::xDim;
+    using ScalarFunction<T>::yDim;
+
+public: // Evaluators
+    virtual T operator()(const T *x) const override;
+    using ScalarFunction<T>::operator();
+
+private: // Data
+    function_type m_f;
+};
+
+// Static scalar function
 template<typename T, typename... ARGS >
-class Function<T(ARGS...)>
-: public Function<T, sizeof...(ARGS), 1>
+class SFunction<T(ARGS...)>
+    : public ScalarFunction<T>
 {
     static_assert(are_assignable<T &, ARGS...>::value,
                   "StaticScalarFunction arguments must be compatible with return type T");
 
-public:
-    // Constructors/Destructor
-    Function(std::function<T(ARGS...)> &&fcn)
-        : m_Fcn(std::forward<std::function<T(ARGS...)>>(fcn))
+private: // Typedefs
+    typedef std::function<T(ARGS...)> function_type;
+
+public: // Constructors/Destructor
+    SFunction(const function_type &f);
+    SFunction(function_type &&fcn)
+        : ScalarFunction<T>(sizeof...(ARGS))
+        , m_f(std::forward<function_type>(fcn))
     {}
-    virtual ~Function() = default;
+    virtual ~SFunction() = default;
 
-    // Accessors
-    using Function<T, sizeof...(ARGS), 1>::xDim;
-    using Function<T, sizeof...(ARGS), 1>::yDim;
+public: // Assignment
+    void setFunction(const function_type &f);
 
-    // Evaluators
-    using Function<T, sizeof...(ARGS), 1>::operator();
-    virtual T operator() (const T *x) const override
-    {
-        return call_f(x, typename METAPROG::make_int_seq<0, sizeof...(ARGS)>::type());
-    }
-    T operator() (const ARGS... args) const
-    {
-        return m_Fcn(std::forward<const ARGS>(args)...);
-    }
+public: // Queries
+    using ScalarFunction<T>::xDim;
+    using ScalarFunction<T>::yDim;
 
-private:
-    // wrapped std::function
-    std::function<T(ARGS...)> m_Fcn;
+public: // Evaluators
+    virtual T operator() (const T *x) const override;
+    using ScalarFunction<T>::operator();
+    template<typename... Ts, typename = typename std::enable_if<are_assignable<T &, Ts...>::value>::type>
+    T operator()(const Ts...x) const;
 
+private: // Utility functions
     template<std::size_t... s>
-    T call_f(const T *x, METAPROG::int_seq<s...>) const
-    {
-        return m_Fcn(std::forward<ARGS>(const_cast < ARGS && > (x[s]))...);
-    }
+    T call_f(const T *x, METAPROG::int_seq<s...>) const;
 
+private: // Data
+    function_type m_f;
 };
+
+
+/******************************************************************************
+ *                        ScalarFunction<T> definition                        *
+ ******************************************************************************/
+
+template<typename T>
+ScalarFunction<T>::ScalarFunction(const unsigned int xdim)
+: m_xDim(xdim)
+{}
+
+template<typename T>
+T ScalarFunction<T>::operator()(const std::vector<T> &x) const
+{
+    checkXdim(x.size());
+    return (*this)(x.data());
+}
+template<typename T>
+T ScalarFunction<T>::operator()(const Vector<T> &x) const
+{
+    checkXdim(x.size());
+    return (*this)(x.data());
+}
+template<typename T>
+template<typename... Ts, typename>
+T ScalarFunction<T>::operator()(const Ts... xs) const
+{
+    static_assert(are_assignable<T &, Ts...>::value,
+                  "ScalarFunction provided arguments are not compatible with type T");
+    checkXdim(sizeof...(xs));
+
+    const T x[] = {(T)xs...};
+    return (*this)(x);
+}
+
+template<typename T>
+void ScalarFunction<T>::setXDim(const unsigned int xdim)
+{
+    m_xDim = xdim;
+}
+
+template<typename T>
+void ScalarFunction<T>::checkXdim(unsigned int xdim) const
+{
+    if (m_xDim && xdim != xDim())
+    {
+        ERROR(SIZE, "wrong number of arguments provided (expected "
+              + utils::strFrom(xDim()) + ", got " + utils::strFrom(xdim) + ")");
+    }
+}
+
+/******************************************************************************
+ *                           SFunction<T> definition                          *
+ ******************************************************************************/
+
+template<typename T>
+SFunction<T>::SFunction(const unsigned int xdim, const function_type &f)
+{
+    setFunction(f, xdim);
+}
+
+template<typename T>
+void SFunction<T>::setFunction(const function_type &f, const unsigned int xdim)
+{
+    ScalarFunction<T>::setXDim(xdim);
+    m_f = f;
+}
+
+template<typename T>
+T SFunction<T>::operator()(const T *x) const
+{
+    return m_f(x);
+}
+
+
+/******************************************************************************
+ *                       SFunction<T(ARGS...)> definition                     *
+ ******************************************************************************/
+
+template<typename T, typename... ARGS>
+SFunction<T(ARGS...)>::SFunction(const function_type &f)
+    : ScalarFunction<T>(sizeof...(ARGS))
+{
+    setFunction(f);
+}
+
+template<typename T, typename... ARGS>
+void SFunction<T(ARGS...)>::setFunction(const function_type &f)
+{
+    m_f = f;
+}
+
+template<typename T, typename... ARGS>
+T SFunction<T(ARGS...)>::operator()(const T *x) const
+{
+    return call_f(x, typename METAPROG::make_int_seq<0, sizeof...(ARGS)>::type());
+}
+template<typename T, typename... ARGS>
+template<typename... Ts, typename>
+T SFunction<T(ARGS...)>::operator()(const Ts... xs) const
+{
+    static_assert(are_assignable<T &, Ts...>::value,
+                  "ScalarFunction provided arguments are not compatible with type T");
+    static_assert(sizeof...(xs) == sizeof...(ARGS), "wrong number of arguments provided");
+
+    return m_f(std::forward<const ARGS>((ARGS)xs)...);
+}
+
+template<typename T, typename... ARGS>
+template<std::size_t... s>
+T SFunction<T(ARGS...)>::call_f(const T *x, METAPROG::int_seq<s...>) const
+{
+    return m_f(std::forward<ARGS>(const_cast < ARGS && > (x[s]))...);
+}
+
 
 /******************************************************************************
  *                          Any Function Type Erasure                         *
  ******************************************************************************/
 
-template<typename T>
-class AnyFunction
-{
-public:
-    // Constructors/Destructor
-    AnyFunction()
-    : m_HeldFcn(nullptr)
-    {}
-    template<int XDIM>
-    AnyFunction(const Function<T, XDIM, 1>& fcn)
-    : m_HeldFcn(new FunctionHolder<typename std::decay<const Function<T, XDIM, 1>>::type>(fcn))
-    {}
-    template<typename... ARGS>
-    AnyFunction(const Function<T(ARGS...)>& fcn)
-    : m_HeldFcn(new FunctionHolder<typename std::decay<const Function<T(ARGS...)>>::type>(fcn))
-    {}
-    template<int XDIM>
-    AnyFunction(Function<T, XDIM, 1>&& fcn)
-    : m_HeldFcn(new FunctionHolder<typename std::decay<Function<T, XDIM, 1>>::type>(std::forward<Function<T, XDIM, 1>&&>(fcn)))
-    {}
+// template<typename T>
+// class AnyFunction
+// {
+// public:
+//     // Constructors/Destructor
+//     AnyFunction()
+//         : m_HeldFcn(nullptr)
+//     {}
+//     template<int XDIM>
+//     AnyFunction(const Function<T, XDIM, 1> &fcn)
+//         : m_HeldFcn(new FunctionHolder<typename std::decay<const Function<T, XDIM, 1>>::type>(fcn))
+//     {}
+//     template<typename... ARGS>
+//     AnyFunction(const Function<T(ARGS...)> &fcn)
+//         : m_HeldFcn(new FunctionHolder<typename std::decay<const Function<T(ARGS...)>>::type>(fcn))
+//     {}
+//     template<int XDIM>
+//     AnyFunction(Function<T, XDIM, 1> &&fcn)
+//         : m_HeldFcn(new FunctionHolder<typename std::decay<Function<T, XDIM, 1>>::type>(std::forward < Function<T, XDIM, 1> && > (fcn)))
+//     {}
 
-    AnyFunction(const AnyFunction& other)
-    : m_HeldFcn(other.m_HeldFcn ? other.m_HeldFcn->clone() : 0)
-    {}
-    AnyFunction(AnyFunction&& other)
-    : m_HeldFcn(other.m_HeldFcn)
-    {
-        other.m_HeldFcn = 0;
-    }
+//     AnyFunction(const AnyFunction &other)
+//         : m_HeldFcn(other.m_HeldFcn ? other.m_HeldFcn->clone() : 0)
+//     {}
+//     AnyFunction(AnyFunction &&other)
+//         : m_HeldFcn(other.m_HeldFcn)
+//     {
+//         other.m_HeldFcn = 0;
+//     }
 
-    ~AnyFunction()
-    {
-        delete m_HeldFcn;
-    }
+//     ~AnyFunction()
+//     {
+//         delete m_HeldFcn;
+//     }
 
-    // Modifiers
-    AnyFunction & swap(AnyFunction& rhs)
-    {
-        std::swap(m_HeldFcn, rhs.m_HeldFcn);
-        return *this;
-    }
-    AnyFunction & operator=(const AnyFunction& rhs)
-    {
-        AnyFunction(rhs).swap(*this);
-        return *this;
-    }
-    AnyFunction& operator=(AnyFunction&& rhs)
-    {
-        rhs.swap(*this);
-        AnyFunction().swap(rhs);
-        return *this;
-    }
-    template<int XDIM>
-    AnyFunction& operator=(Function<T, XDIM, 1>&& rhs)
-    {
-        AnyFunction(std::forward<Function<T, XDIM, 1>&&>(rhs)).swap(*this);
-        return *this;
-    }
+//     // Modifiers
+//     AnyFunction &swap(AnyFunction &rhs)
+//     {
+//         std::swap(m_HeldFcn, rhs.m_HeldFcn);
+//         return *this;
+//     }
+//     AnyFunction &operator=(const AnyFunction &rhs)
+//     {
+//         AnyFunction(rhs).swap(*this);
+//         return *this;
+//     }
+//     AnyFunction &operator=(AnyFunction && rhs)
+//     {
+//         rhs.swap(*this);
+//         AnyFunction().swap(rhs);
+//         return *this;
+//     }
+//     template<int XDIM>
+//     AnyFunction &operator=(Function<T, XDIM, 1> && rhs)
+//     {
+//         AnyFunction(std::forward < Function<T, XDIM, 1> && > (rhs)).swap(*this);
+//         return *this;
+//     }
 
-public:
-    // Queries
-    const std::type_info & type() const
-    {
-        return m_HeldFcn ? m_HeldFcn->type(): typeid(void);
-    }
+// public:
+//     // Queries
+//     const std::type_info &type() const
+//     {
+//         return m_HeldFcn ? m_HeldFcn->type() : typeid(void);
+//     }
 
-private:
-    // Holder classes
-    class HolderBase
-    {
-    public:
-        // Constructors/Destructor
-        virtual ~HolderBase() = default;
+// private:
+//     // Holder classes
+//     class HolderBase
+//     {
+//     public:
+//         // Constructors/Destructor
+//         virtual ~HolderBase() = default;
 
-        // Queries
-        virtual const std::type_info& type() const =0;
-        virtual HolderBase * clone() const =0;
-    };
+//         // Queries
+//         virtual const std::type_info &type() const = 0;
+//         virtual HolderBase *clone() const = 0;
+//     };
 
-    template<typename FunctionType>
-    class FunctionHolder
-    : public HolderBase
-    {
-    public:
-        // Constructors/Destructor
-        FunctionHolder(const FunctionType& fcn)
-        : held(fcn)
-        {}
-        FunctionHolder(FunctionType&& fcn)
-        : held(std::forward<FunctionType&&>(fcn))
-        {}
-        virtual ~FunctionHolder() = default;
+//     template<typename FunctionType>
+//     class FunctionHolder
+//         : public HolderBase
+//     {
+//     public:
+//         // Constructors/Destructor
+//         FunctionHolder(const FunctionType &fcn)
+//             : held(fcn)
+//         {}
+//         FunctionHolder(FunctionType &&fcn)
+//             : held(std::forward < FunctionType&& > (fcn))
+//         {}
+//         virtual ~FunctionHolder() = default;
 
-    public:
-        // Queries
-        virtual const std::type_info& type() const override
-        {
-            return typeid(FunctionType);
-        }
-        virtual HolderBase * clone() const
-        {
-            return new FunctionHolder(held);
-        }
+//     public:
+//         // Queries
+//         virtual const std::type_info &type() const override
+//         {
+//             return typeid(FunctionType);
+//         }
+//         virtual HolderBase *clone() const
+//         {
+//             return new FunctionHolder(held);
+//         }
 
-    public:
-        // Held function
-        FunctionType held;
+//     public:
+//         // Held function
+//         FunctionType held;
 
-    private:
-        // Prevents copy
-        FunctionHolder & operator=(const FunctionHolder&);
-    };
+//     private:
+//         // Prevents copy
+//         FunctionHolder &operator=(const FunctionHolder &);
+//     };
 
-private:
-    // Casts TODO
+// private:
+//     // Casts TODO
 
-private:
-    HolderBase * m_HeldFcn;
-};
+// private:
+//     HolderBase *m_HeldFcn;
+// };
 
 /******************************************************************************
  *                           Bind utility functions                           *
@@ -305,73 +373,57 @@ BEGIN_NAMESPACE(internal)
 template<typename F, typename... ARGS>
 struct BindHelper;
 
-// Static scalar function bind
-template<typename T, unsigned int XDIM>
-struct BindHelper<Function<T, XDIM, 1>, const std::vector<T> &>
+// Scalar function bind
+template<typename T>
+struct BindHelper<SFunction<T>, const std::vector<T> &>
 {
-    typedef Function<T()> ReturnType;
-    static ReturnType bind(Function<T, XDIM, 1> &&f, const std::vector<T> &x)
+    typedef SFunction<T()> ReturnType;
+    static ReturnType bind(SFunction<T> &&f, const std::vector<T> &x)
     {
-        using f_op = T(Function<T, XDIM, 1>::*)(const T *) const;
-        return ReturnType(std::bind(static_cast<f_op>(Function<T, XDIM, 1>::operator()), f, x.data()));
+        auto f_caller = [f](const std::vector<T> &x){return f(x.data());};
+        auto f_bind = std::bind(f_caller, x);
+        return ReturnType(f_bind);
     }
 };
-template<typename T, unsigned int XDIM>
-struct BindHelper<Function<T, XDIM, 1>, const Vector<T> &>
+template<typename T>
+struct BindHelper<SFunction<T>, const Vector<T> &>
 {
-    typedef Function<T()> ReturnType;
-    static ReturnType bind(Function<T, XDIM, 1> &&f, const Vector<T> &x)
+    typedef SFunction<T()> ReturnType;
+    static ReturnType bind(SFunction<T> &&f, const Vector<T> &x)
     {
-        using f_op = T(Function<T, XDIM, 1>::*)(const T *) const;
-        return ReturnType(std::bind(static_cast<f_op>(Function<T, XDIM, 1>::operator()), f, x.data()));
+        auto f_caller = [f](const Vector<T> &x){return f(x.data());};
+        auto f_bind = std::bind(f_caller, x);
+        return ReturnType(f_bind);
     }
 };
-template<typename T, unsigned int XDIM, typename... ARGS>
-struct BindHelper<Function<T, XDIM, 1>, ARGS...>
+template<typename T, typename... ARGS>
+struct BindHelper<SFunction<T>, ARGS...>
 {
     template<typename... Xs>
-    static Function<T(Xs...)> dummy(METAPROG::pack<Xs...>);
+    static SFunction<T(Xs...)> dummy(METAPROG::pack<Xs...>);
     typedef decltype(dummy(typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<typename std::decay<ARGS>::type...>::value>::result())) ReturnType;
 
-    static ReturnType bind(Function<T, XDIM, 1> &&f, ARGS &&... args)
+    static ReturnType bind(SFunction<T> &&f, ARGS &&... args)
     {
-        using f_op = T (Function<T, XDIM, 1>::*)(typename if_<(bool)std::is_placeholder<typename std::decay<ARGS>::type>::value, T, ARGS>::result...) const;
-        return ReturnType(std::bind(static_cast<f_op>(&Function<T, XDIM, 1>::operator()), f, std::forward<ARGS>(args)...));
+        auto f_caller = [f](typename if_<(bool)std::is_placeholder<typename std::decay<ARGS>::type>::value, T, ARGS>::result... fargs){return f(fargs...);};
+        auto f_bind = std::bind(f_caller, std::forward<ARGS>(args)...);
+        return ReturnType(f_bind);
     }
 };
 
-// Static C/C++ wrapper scalar function bind
-template<typename T, typename... FARGS>
-struct BindHelper<Function<T(FARGS...)>, const std::vector<T> &>
-{
-    typedef Function<T()> ReturnType;
-    static ReturnType bind(Function<T(FARGS...)> &&f, const std::vector<T> &x)
-    {
-        using f_op = T(Function<T(FARGS...)>::*)(const T *) const;
-        return ReturnType(std::bind(static_cast<f_op>(&Function<T(FARGS...)>::operator()), f, x.data()));
-    }
-};
-template<typename T, typename... FARGS>
-struct BindHelper<Function<T(FARGS...)>, const Vector<T> &>
-{
-    typedef Function<T()> ReturnType;
-    static ReturnType bind(Function<T(FARGS...)> &&f, const Vector<T> &x)
-    {
-        using f_op = T(Function<T(FARGS...)>::*)(const T *) const;
-        return ReturnType(std::bind(static_cast<f_op>(&Function<T(FARGS...)>::operator()), f, x.data()));
-    }
-};
+// Static scalar function bind specialization
 template<typename T, typename... FARGS, typename... ARGS>
-struct BindHelper<Function<T(FARGS...)>, ARGS...>
+struct BindHelper<SFunction<T(FARGS...)>, ARGS...>
 {
     template<typename... Xs>
-    static Function<T(Xs...)> dummy(METAPROG::pack<Xs...>);
+    static SFunction<T(Xs...)> dummy(METAPROG::pack<Xs...>);
     typedef decltype(dummy(typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<typename std::decay<ARGS>::type...>::value>::result())) ReturnType;
 
-    static ReturnType bind(Function<T(FARGS...)> &&f, ARGS &&... args)
+    static ReturnType bind(SFunction<T(FARGS...)> &&f, ARGS &&... args)
     {
-        using f_op = T (Function<T(FARGS...)>::*)(FARGS...) const;
-        return ReturnType(std::bind(static_cast<f_op>(&Function<T(FARGS...)>::operator()), f, std::forward<ARGS>(args)...));
+        auto f_caller = [f](FARGS... fargs){return f(fargs...);};
+        auto f_bind = std::bind(f_caller, std::forward<ARGS>(args)...);
+        return ReturnType(f_bind);
     }
 };
 
@@ -385,263 +437,13 @@ typename internal::BindHelper<typename std::decay<F>::type, ARGS...>::ReturnType
 
 
 /******************************************************************************
- *                      Function<T, XDIM, 1> definition                       *
- ******************************************************************************/
-
-template<typename T, unsigned int XDIM>
-T Function<T, XDIM, 1>::operator()(const std::vector<T> &x) const
-{
-    checkXdim(x.size());
-    return (*this)(x.data());
-}
-template<typename T, unsigned int XDIM>
-T Function<T, XDIM, 1>::operator()(const Vector<T> &x) const
-{
-    checkXdim(x.size());
-    return (*this)(x.data());
-}
-template<typename T, unsigned int XDIM>
-template<typename... Ts>
-T Function<T, XDIM, 1>::operator()(const Ts... xs) const
-{
-    static_assert(sizeof...(xs) == XDIM, "wrong number of arguments provided");
-    static_assert(are_assignable<T &, Ts...>::value,
-                  "ScalarFunction provided arguments are not compatible with type T");
-
-    const T x[] = {(T)xs...};
-    return (*this)(x);
-}
-
-
-/******************************************************************************
- *                     Function<T, Dynamic, 1> definition                     *
- ******************************************************************************/
-
-template<typename T>
-T Function<T, Dynamic, 1>::operator()(const std::vector<T> &x) const
-{
-    checkXdim(x.size());
-    return (*this)(x.data());
-}
-template<typename T>
-T Function<T, Dynamic, 1>::operator()(const Vector<T> &x) const
-{
-    checkXdim(x.size());
-    return (*this)(x.data());
-}
-
-template<typename T>
-void Function<T, Dynamic, 1>::checkXdim(unsigned int xdim) const
-{
-    if (m_xDim && xdim != xDim())
-    {
-        ERROR(SIZE, "wrong number of arguments provided (expected "
-              + utils::strFrom(xDim()) + ", got " + utils::strFrom(xdim) + ")");
-    }
-}
-
-
-/******************************************************************************
  *                                  Aliases                                   *
  ******************************************************************************/
 
-// template<typename T, int XDIM>
-// using ScalarFunction = Function<T, XDIM, 1>;
-
-
-
 
 /******************************************************************************
- *                               ScalarFunction                               *
+ *                               VectorFunction                               *
  ******************************************************************************/
-
-// template<typename Signature>
-// class StaticScalarFunction;
-
-// template<typename T>
-// class ScalarFunction
-// {
-// private:
-//     unsigned int _xDim;
-
-//     template<typename BoundF, typename... Ps>
-//     StaticScalarFunction<T(Ps...)> bind_hlp(BoundF F, METAPROG::pack<Ps...>) const;
-
-// public:
-//     // Constructors/Destructor
-//     explicit ScalarFunction(unsigned int xdim)
-//         : _xDim(xdim)
-//     {}
-//     virtual ~ScalarFunction() = default;
-
-//     // Accessors
-//     unsigned int xDim() const
-//     {
-//         return _xDim;
-//     }
-//     static unsigned int yDim()
-//     {
-//         return 1;
-//     }
-
-//     // Evaluators
-//     virtual T operator()(const T *x) const = 0;
-//     T operator()(const std::vector<T> &x) const;
-//     T operator()(const Vector<T> &x) const;
-//     template<typename... Ts>
-//     T operator()(const Ts...x) const;
-
-//     // Bind
-//     StaticScalarFunction<T()> bind(const std::vector<T> &x) const;
-//     StaticScalarFunction<T()> bind(const Vector<T> &x) const;
-//     template < typename... Args,
-//                typename = typename std::enable_if <
-//                    and_< or_<std::is_assignable<T &, Args>::value, (bool)std::is_placeholder<Args>::value>::value... >::value>::type>
-//     auto bind(Args... args) const
-//     -> decltype(bind_hlp(std::bind(
-//                              &ScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
-//                              , this, std::forward<Args>(args)...)
-//                          , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()));
-
-// protected:
-//     void checkXdim(unsigned int xdim) const;
-//     void setXDim(unsigned int xdim)
-//     {
-//         _xDim = xdim;
-//     }
-// };
-
-// /******************************************************************************
-//  *                            StaticScalarFunction                            *
-//  ******************************************************************************/
-
-// template<typename T, typename... Args>
-// class StaticScalarFunction<T(Args...)>
-//     : public virtual ScalarFunction<T>
-// {
-//     static_assert(are_assignable<T &, Args...>::value,
-//                   "StaticScalarFunction arguments must be compatible with return type T");
-// private:
-//     // Typedefs
-//     typedef std::function<T(Args...)> fcn_type;
-
-// private:
-//     fcn_type _Fcn;
-
-// public:
-//     StaticScalarFunction(fcn_type f)
-//         : ScalarFunction<T>(sizeof...(Args))
-//         , _Fcn(f)
-//     {}
-
-//     using ScalarFunction<T>::operator();
-//     template<typename... Ts>
-//     T operator()(const Ts...x) const
-//     {
-//         static_assert(sizeof...(x) == sizeof...(Args), "wrong number of arguments provided");
-//         return _Fcn(x...);
-//     }
-
-// protected:
-//     virtual T operator() (const T *x) const override
-//     {
-//         return call_f(x, typename METAPROG::make_int_seq<0, sizeof...(Args)>::type());
-//     }
-
-// private:
-//     template<std::size_t... s>
-//     T call_f(const T *x, METAPROG::int_seq<s...>) const
-//     {
-//         return _Fcn(std::forward<Args>(const_cast < Args && > (x[s]))...);
-//     }
-// };
-
-
-
-// /******************************************************************************
-//  *                         ScalarFunction definition                          *
-//  ******************************************************************************/
-
-
-// template<typename T>
-// T ScalarFunction<T>::operator()(const std::vector<T> &x) const
-// {
-//     checkXdim(x.size());
-//     return (*this)(x.data());
-// }
-// template<typename T>
-// T ScalarFunction<T>::operator()(const Vector<T> &x) const
-// {
-//     checkXdim(x.size());
-//     return (*this)(x.data());
-// }
-// template<typename T>
-// template<typename... Ts>
-// T ScalarFunction<T>::operator()(const Ts... xs) const
-// {
-//     static_assert(are_assignable<T &, Ts...>::value,
-//                   "ScalarFunction provided arguments are not compatible with type T");
-//     // static_assert(are_floating_points<Ts...>::value,
-//     //               "ScalarFunction provided arguments are not compatible with type T");
-
-//     const T x[] = {(T)xs...};
-//     checkXdim(sizeof...(xs));
-//     return (*this)(x);
-// }
-
-// template<typename T>
-// void ScalarFunction<T>::checkXdim(unsigned int xdim) const
-// {
-//     if (_xDim && xdim != xDim())
-//     {
-//         ERROR(SIZE, "wrong number of arguments provided (expected "
-//               + utils::strFrom(xDim()) + ", got " + utils::strFrom(xdim) + ")");
-//     }
-// }
-
-// template<typename T>
-// StaticScalarFunction<T()> ScalarFunction<T>::bind(const std::vector<T> &x) const
-// {
-//     return StaticScalarFunction<T()>
-//            (std::bind(static_cast<T(ScalarFunction<T>::*)(const T *) const>(&ScalarFunction<T>::operator()), this, x.data())
-//             , 0);
-// }
-
-// template<typename T>
-// StaticScalarFunction<T()> ScalarFunction<T>::bind(const Vector<T> &x) const
-// {
-//     return StaticScalarFunction<T()>
-//            (std::bind(static_cast<T(ScalarFunction<T>::*)(const T *) const>(&ScalarFunction<T>::operator()), this, x.data())
-//             , 0);
-// }
-
-// template<typename T >
-// template<typename BoundF, typename... Ps>
-// StaticScalarFunction<T(Ps...)> ScalarFunction<T>::bind_hlp(BoundF F, METAPROG::pack<Ps...>) const
-// {
-//     return StaticScalarFunction<T(Ps...)>(F);
-// }
-
-// template<typename T>
-// template < typename... Args,
-//            typename>
-// auto ScalarFunction<T>::bind(Args... args) const
-// -> decltype(bind_hlp(std::bind(
-//                          &ScalarFunction<T>::operator()<typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result...>
-//                          , this, std::forward<Args>(args)...)
-//                      , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result()))
-// {
-//     return bind_hlp(
-//                std::bind(
-//                    &ScalarFunction<T>::operator()< typename if_<(bool)std::is_placeholder<Args>::value, T, Args>::result... >
-//                    , this, std::forward<Args>(args)...)
-//                , typename METAPROG::make_pack<T, METAPROG::pack_count_placeholders<Args...>::value>::result());
-// }
-
-
-// /******************************************************************************
-//  *                               VectorFunction                               *
-//  ******************************************************************************/
 
 // // template<typename T>
 // // class VectorFunction

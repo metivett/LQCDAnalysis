@@ -1,4 +1,6 @@
-CC = g++
+CC = g++-4.7
+# CC = g++-4.9
+# CC = clang
 
 CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++11 -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
 

@@ -1,4 +1,4 @@
-// #include "LQCDA.hpp"
+#include "LQCDA.hpp"
 #include "Function.hpp"
 #include "GSLRootFinder.hpp"
 
@@ -11,20 +11,23 @@ using namespace LQCDA;
 using namespace std;
 //using namespace ROOT::Minuit2;
 
-// class Line
-//     : public LQCDA::ParametrizedScalarFunction<double>
-// {
-// public:
-//     Line()
-//         : ParametrizedScalarFunction<double>(1, 1)
-//     {}
+class Line
+    : public LQCDA::ParametrizedSFunction<double>
+{
+public:
+    Line()
+        : ParametrizedSFunction<double>(1, 2, std::function<double(const double*, const double*)>(eval))
+    {}
 
-//     using LQCDA::ParametrizedScalarFunction<double>::operator();
-//     virtual double operator()(const double *x, const double *p) const
-//     {
-//         return 2.*(*p) * (*x);
-//     }
-// };
+    using LQCDA::ParametrizedSFunction<double>::operator();
+
+private:
+    static double eval(const double * x, const double * p)
+    {
+        // a*x+b
+        return p[0]*(*x) + p[1];
+    }
+};
 
 // class F
 //     : public LQCDA::ScalarFunction<double>
@@ -60,7 +63,7 @@ using namespace std;
 
 double f(double a, double b)
 {
-    double x2 = a * a + b * b;
+    double x2 = (a-b) * (a-b) + b * b;
     return x2 - 2 * a + exp(b) + 10.;
 }
 
@@ -117,14 +120,32 @@ int main()
     // auto myBoundLine = myLine.bind(std::placeholders::_1, 2);
     // cout << myBoundLine(1) << endl;
     
-    auto myF = Function<double(double, double)>(f);
+    auto myF = SFunction<double(double, double)>(f);
     cout << myF(1, 2) << endl;
     auto myBoundF = LQCDA::bind(myF, 1, std::placeholders::_1);
     cout << myBoundF(2) << endl;
 
-    LQCDA::Roots::BrentRootFinder<double> brf;
-    auto root = brf.solve(Function<double(double)>(g), 0., 2.);
-    cout << root.value() << endl;
+    // MIN::MIGRAD<double> myMinimizer;
+    // myMinimizer.options().error_definition = 1.e-3;
+    // auto myFMin = myMinimizer.minimize(myF, {0., 0.});
+
+    XYData<double> xyd(5, 1, 1);
+    xyd.y({}, 0) << 2., 3., 4., 5., 6.;
+    xyd.x({}, 0) << 0., 1., 2., 3., 4.;
+    FOR_MAT_DIAG(xyd.yyCov(0,0), i)
+    {
+        xyd.yyCov(0, 0)(i, i) = 0.1;
+    }
+    cout << xyd.yyCov({}, {}) << endl;
+    Line myLine;
+    Chi2Fit<double, MIN::MIGRAD> myFit(xyd);
+    myFit.fitAllPoints(true);
+    myFit.options.verbosity = DEBUG;
+    ScalarConstraint<double> myAConstraint, myBConstraint;
+    myAConstraint.fixValue(1.);
+    auto myFitResult = myFit.fit(myLine, {0., 0.}, {myAConstraint, myBConstraint});
+    for(double p: myFitResult.parameters())
+        cout << p << endl;
 }
 
 

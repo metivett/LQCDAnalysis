@@ -13,32 +13,34 @@
  #include "ParametrizedFunction.hpp"
 
  namespace LQCDA {
- 	namespace internal {
-	 	template<
-	 	typename T, 
-	 	template<typename> class COST,
-	 	template<typename> class MINIMIZER
-	 	>
- 		class FitImpl;
- 	}
+ 	// namespace internal {
+	 // 	template<
+	 // 	typename T, 
+	 // 	template<typename> class COST,
+	 // 	template<typename> class MINIMIZER
+	 // 	>
+ 	// 	class FitImpl;
+ 	// }
 
  	// Fit result
  	template<typename T>
  	class FitResult
  	{
- 		template<
-	 	typename S, 
-	 	template<typename> class COST,
-	 	template<typename> class MINIMIZER
-	 	>
-	 	friend class internal::FitImpl;
+ 		// template<
+	 	// typename S, 
+	 	// template<typename> class COST,
+	 	// template<typename> class MINIMIZER
+	 	// >
+	 	// friend class internal::FitImpl;
 
  	public:
  		FitResult()
- 		: _Model{}
- 		, _Cost{0}
- 		, _nDOF{0}
- 		, _isValid{false}
+ 		// : _Params()
+ 		// , _Errors()
+ 		// // , _Model()
+ 		// , _Cost(0)
+ 		// , _nDOF(0)
+ 		// , _isValid(false)
  		{}
  		// Accessors
  		const T& p(unsigned int i) const { return _Params[i]; }
@@ -46,20 +48,20 @@
  		const T& err(unsigned int i) const { return _Errors[i]; }
  		const std::vector<T>& errors() const { return _Errors; }
 
- 		const std::vector<const ParametrizedScalarFunction<T>*>& model() const { return _Model; }
- 		const ParametrizedScalarFunction<T>& model(const unsigned int k) const { return _Model[k]; }
+ 		// const std::vector<const ParametrizedScalarFunction<T>*>& model() const { return _Model; }
+ 		// const ParametrizedScalarFunction<T>& model(const unsigned int k) const { return _Model[k]; }
  		
  		T cost() const { return _Cost; }
  		unsigned int nDOF() const { return _nDOF; }
  		bool isValid() const { return _isValid; }
 
- 	private:
+ 	public:
  		// Fitted parameters
  		std::vector<T> _Params;
  		// Errors
  		std::vector<T> _Errors;
  		// Model
- 		std::vector<const ParametrizedScalarFunction<T>*> _Model;
+ 		// std::vector<const ParametrizedScalarFunction<T>*> _Model;
  		// Cost function value
  		T _Cost;
  		// Number of degrees of freedom

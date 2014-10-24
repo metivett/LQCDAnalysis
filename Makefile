@@ -1,4 +1,6 @@
-CC = g++
+CC = g++-4.7
+# CC = g++-4.9
+# CC = clang
 LEX = flex
 YACC = bison -y
 
@@ -20,11 +22,11 @@ LIBS += -L$(UTILS_DIR) -lutils
 SRC = 								\
 	DataFile.cpp					\
 	FitInterface.cpp				\
+	Random.cpp						\
 	# GracePlotRenderer.cpp			\
 	# Graph.cpp						\
 	# Plot.cpp						\
-	# PlotModifier.cpp				\
-	Random.cpp
+	# PlotModifier.cpp
 
 LEX_SRC =							\
 	AsciiLexer.lpp

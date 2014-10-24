@@ -10,14 +10,15 @@
 
 #include "Globals.hpp"
 #include "FitInterface.hpp"
+#include "FitResult.hpp"
 #include "CostFunction.hpp"
 #include "Minimizer.hpp"
 #include "IO.hpp"
 
 BEGIN_NAMESPACE(LQCDA)
 
-template<typename T>
-class FitResult;
+// template<typename T>
+// class FitResult;
 
 BEGIN_NAMESPACE(internal)
 
@@ -176,6 +177,7 @@ FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
             _CostFcn->requestUpdate();
         }
     }
+
     // Minimizer
     vout(DEBUG) << "Creating minimizer...\n";
     _Minimizer = std::unique_ptr<MINIMIZER<T>>(new MINIMIZER<T>);
@@ -200,8 +202,10 @@ FitResult<T> FitImpl<T, COST, MINIMIZER>::fit(
             xk++;
         }
 
+// std::cout << "_CostFcn->nDOF() = " << _CostFcn->nDOF() << std::endl;
     // Fit
     FitResult<T> result;
+// std::cout << "_CostFcn->nDOF() = " << _CostFcn->nDOF() << std::endl;
     result._nDOF = _CostFcn->nDOF();
 
     auto min = _Minimizer->minimize(*_CostFcn, xinit, constraints);
@@ -257,6 +261,7 @@ END_NAMESPACE // internal
 
 template<typename T, template<typename> class MINIMIZER>
 using Chi2Fit = internal::FitImpl<T, Chi2CostFunction, MINIMIZER>;
+
 // template<template<typename> class MINIMIZER, typename T>
 // internal::FitImpl<T, Chi2CostFunction, MINIMIZER> Chi2Fit(
 //  const XYDataInterface<T>& data)

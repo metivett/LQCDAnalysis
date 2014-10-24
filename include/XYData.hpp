@@ -26,8 +26,8 @@
 
  		// Data
  		unsigned int _nPts, _xDim, _yDim;
- 		Matrix<double> _x, _y;
- 		Matrix<Matrix<double>> _Cxx, _Cyy, _Cxy;
+ 		Matrix<T> _x, _y;
+ 		Matrix<Matrix<T>> _Cxx, _Cyy, _Cxy;
 
  	public:
  		// Constructors

@@ -17,6 +17,8 @@
 #include "Minuit2/MnSimplex.h"
 #include "Minuit2/MnUserParameters.h"
 
+#include "Minuit2/MnMinos.h"
+
 
 BEGIN_NAMESPACE(LQCDA)
 BEGIN_NAMESPACE(MIN)
@@ -28,6 +30,7 @@ public:
     unsigned int level;
     bool pre_minimize;
     unsigned int pre_min_level;
+    double error_definition;
 
 public:
     MnMigradMinimizerOptions()
@@ -48,7 +51,8 @@ public:
         os << "MIGRAD options:\n"
            << "\tlevel = " << level << std::endl
            << "\tpre_minimize = " << pre_minimize << std::endl
-           << "\tpre_minimize level = " << pre_min_level << std::endl;
+           << "\tpre_minimize level = " << pre_min_level << std::endl
+           << "\terror_definition = " << error_definition << std::endl;
     }
 
 private:
@@ -57,6 +61,7 @@ private:
         level = 2;
         pre_minimize = true;
         pre_min_level = 1;
+        error_definition = 1.;
     }
 };
 
@@ -75,13 +80,19 @@ private:
     {
     private:
         const ScalarFunction<T> &_F;
+        const MnMigradMinimizerOptions& _Opts;
 
     public:
-        Mn2FCNWrapper(const ScalarFunction<T> &f): FCNBase(), _F(f) {}
+        Mn2FCNWrapper(const ScalarFunction<T> &f, const MnMigradMinimizerOptions& opts)
+        : FCNBase()
+        , _F(f)
+        , _Opts(opts)
+        {}
+        virtual ~Mn2FCNWrapper() {}
 
         virtual double Up () const
         {
-            return 1.0;
+            return _Opts.error_definition;
         }
         virtual double operator()(const std::vector<double> &args) const
         {
@@ -107,6 +118,7 @@ public:
     }
 
     // Minimize
+    using Minimizer<T>::minimize;
     virtual typename Minimizer<T>::Result minimize(
         const ScalarFunction<T> &F,
         const std::vector<T> &x0,
@@ -134,6 +146,11 @@ typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
     ROOT::Minuit2::MnUserParameters params(x0, e0);
     for (int i = 0; i < c.size(); i++)
     {
+        if(c[i].hasFixedValue())
+        {
+            params.Fix(i);
+            params.SetValue(i, c[i].fixedValue());
+        }
         if (c[i].hasLowerBound())
             params.SetLowerLimit(i, c[i].lowerBound());
         if (c[i].hasUpperBound())
@@ -141,7 +158,7 @@ typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
     }
     vout(NORMAL) << params << std::endl;
 
-    auto MnF = new Mn2FCNWrapper(F);
+    auto MnF = new Mn2FCNWrapper(F, _Opts);
 
     if (_Opts.pre_minimize)
     {

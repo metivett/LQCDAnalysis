@@ -29,6 +29,7 @@ public:
     void setBounds(T a, T b) { setLowerBound(a); setUpperBound(b); }
     void setLowerBound(T a) { m_HasLowerBound = true; m_LowerBound = a; }
     void setUpperBound(T b) { m_HasUpperBound = true; m_UpperBound = b; }
+    void fixValue(T s) { m_HasFixedValue = true; m_FixedValue = s; }
     void setNone() { clear(); }
 
     // Constraints access
@@ -37,6 +38,8 @@ public:
     T lowerBound() const { return m_LowerBound; }
     bool hasUpperBound() const { return m_HasUpperBound; }
     T upperBound() const { return m_UpperBound; }
+    bool hasFixedValue() const { return m_HasFixedValue; }
+    T fixedValue() const { return m_FixedValue; }
 
 private:
     void clear();
@@ -46,6 +49,8 @@ private:
     T m_LowerBound;
     bool m_HasUpperBound {false};
     T m_UpperBound;
+    bool m_HasFixedValue {false};
+    T m_FixedValue;
 };
 
 template<typename T>
