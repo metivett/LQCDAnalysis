@@ -113,7 +113,7 @@ for(index_t i = 0; i < (m).rows(); ++i)
 for(index_t i = 0; i < std::min((m).rows(), (m).cols()); ++i)
 
 #define FOR_VEC(v, i) \
-for(index_t i = 0; i < (v).rows(); ++i)
+for(index_t i = 0; i < (v).size(); ++i)
 
 #define FOR_ARRAY(a, i, j) \
 for(index_t j = 0; j < (a).cols(); ++j) \

@@ -174,6 +174,7 @@
  		unsigned int cols() const;
  		void resize(unsigned int size);
  		void resizeMatrix(unsigned int nRow, unsigned int nCol);
+ 		void conservativeResizeMatrix(unsigned int nRow, unsigned int nCol);
  		BlockSample block(index_t i, index_t j, unsigned int nRow, unsigned int nCol);
  		ConstBlockSample block(index_t i, index_t j, unsigned int nRow, unsigned int nCol) const;
  		BlockSample col(index_t j);
@@ -305,6 +306,17 @@
  		FOR_SAMPLE(*this, s)
  		{
  			(*this)[s].resize(nRow, nCol);
+ 		}
+ 		// _nRow = nRow;
+ 		// _nCol = nCol;
+ 	}
+
+ 	template<typename T>
+ 	void Sample<Matrix<T>>::conservativeResizeMatrix(unsigned int nRow, unsigned int nCol)
+ 	{
+ 		FOR_SAMPLE(*this, s)
+ 		{
+ 			(*this)[s].conservativeResize(nRow, nCol);
  		}
  		// _nRow = nRow;
  		// _nCol = nCol;
