@@ -16,16 +16,16 @@ class Line
 {
 public:
     Line()
-        : ParametrizedSFunction<double>(1, 2, std::function<double(const double*, const double*)>(eval))
+        : ParametrizedSFunction<double>(1, 2, std::function<double(const double *, const double *)>(eval))
     {}
 
     using LQCDA::ParametrizedSFunction<double>::operator();
 
 private:
-    static double eval(const double * x, const double * p)
+    static double eval(const double *x, const double *p)
     {
         // a*x+b
-        return p[0]*(*x) + p[1];
+        return p[0] * (*x) + p[1];
     }
 };
 
@@ -63,7 +63,7 @@ private:
 
 double f(double a, double b)
 {
-    double x2 = (a-b) * (a-b) + b * b;
+    double x2 = (a - b) * (a - b) + b * b;
     return x2 - 2 * a + exp(b) + 10.;
 }
 
@@ -106,46 +106,62 @@ int main()
     // cout << m.view(Eigen::Range<2>(0, 2), Eigen::Range<2>(0, 2)) << endl << endl;
     // cout << m.view(0, Eigen::Range<2>(0, 2)) << endl << endl;
     // cout << m.view(Eigen::Range<2>(0, 2), 1) << endl << endl;
-    
-    // F myF;
-    // std::vector<double> p = {1., 2.};
-    // cout << myF(p) << endl;
-    // auto myBoundF = myF.bind(std::placeholders::_2, std::placeholders::_1);
-    // double d = myBoundF(2., 1.);
-    // cout << d << endl;
-    
-    // Line myLine;
-    // const double x = 1., p = 2.;
-    // cout << myLine(&x, &p) << endl;
-    // auto myBoundLine = myLine.bind(std::placeholders::_1, 2);
-    // cout << myBoundLine(1) << endl;
-    
-    auto myF = SFunction<double(double, double)>(f);
-    cout << myF(1, 2) << endl;
-    auto myBoundF = LQCDA::bind(myF, 1, std::placeholders::_1);
-    cout << myBoundF(2) << endl;
+
+    // auto myF = SFunction<double(double, double)>(f);
+    // cout << myF(1, 2) << endl;
+    // auto myBoundF = LQCDA::bind(myF, 1, std::placeholders::_1);
+    // cout << myBoundF(2) << endl;
 
     // MIN::MIGRAD<double> myMinimizer;
     // myMinimizer.options().error_definition = 1.e-3;
     // auto myFMin = myMinimizer.minimize(myF, {0., 0.});
 
-    XYData<double> xyd(5, 1, 1);
-    xyd.y({}, 0) << 2., 3., 4., 5., 6.;
-    xyd.x({}, 0) << 0., 1., 2., 3., 4.;
-    FOR_MAT_DIAG(xyd.yyCov(0,0), i)
+    // XYData<double> xyd(5, 1, 1);
+    // xyd.y({}, 0) << 2., 3., 4., 5., 6.;
+    // xyd.x({}, 0) << 0., 1., 2., 3., 4.;
+    // FOR_MAT_DIAG(xyd.yyCov(0,0), i)
+    // {
+    //     xyd.yyCov(0, 0)(i, i) = 0.1;
+    // }
+    // cout << xyd.yyCov({}, {}) << endl;
+    // Line myLine;
+    // Chi2Fit<double, MIN::MIGRAD> myFit(xyd);
+    // myFit.fitAllPoints(true);
+    // myFit.options.verbosity = DEBUG;
+    // ScalarConstraint<double> myAConstraint, myBConstraint;
+    // myAConstraint.fixValue(1.);
+    // auto myFitResult = myFit.fit(myLine, {0., 0.}, {myAConstraint, myBConstraint});
+    // for(double p: myFitResult.parameters())
+    //     cout << p << endl;
+
+    Sample<double> mySample(4);
+    FOR_SAMPLE(mySample, s)
     {
-        xyd.yyCov(0, 0)(i, i) = 0.1;
+        mySample[s] = s;
     }
-    cout << xyd.yyCov({}, {}) << endl;
-    Line myLine;
-    Chi2Fit<double, MIN::MIGRAD> myFit(xyd);
-    myFit.fitAllPoints(true);
-    myFit.options.verbosity = DEBUG;
-    ScalarConstraint<double> myAConstraint, myBConstraint;
-    myAConstraint.fixValue(1.);
-    auto myFitResult = myFit.fit(myLine, {0., 0.}, {myAConstraint, myBConstraint});
-    for(double p: myFitResult.parameters())
-        cout << p << endl;
+    cout << mySample.mean() << endl;
+    cout << mySample.median() << endl;
+    cout << mySample.variance() << endl;
+    cout << endl;
+
+    Sample<double> mySample2(4);
+    FOR_SAMPLE(mySample2, s)
+    {
+        mySample2[s] = s+1;
+    }
+    cout << mySample2.mean() << endl;
+    cout << mySample2.median() << endl;
+    cout << mySample2.variance() << endl;
+    cout << endl;
+
+    Sample<Matrix<double>> myMatSample(4, 2, 1);
+    FOR_SAMPLE(myMatSample, s)
+    {
+        myMatSample[s] << s, s+1;
+    }
+    cout << myMatSample.mean() << endl;
+    cout << myMatSample.median() << endl;
+    cout << myMatSample.variance() << endl;
 }
 
 
