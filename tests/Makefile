@@ -1,4 +1,5 @@
-CC = clang
+# CC = clang
+CC = g++-4.7
 LD = g++
 
 CURRENT_DIR=$(CURDIR)

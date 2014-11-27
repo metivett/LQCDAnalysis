@@ -24,7 +24,7 @@
 // #include "GracePlot.hpp"
 // #include "Graph.hpp"				
 // #include "IOObject.hpp"				
-// #include "LinalgUtils.hpp"				
+#include "LinalgUtils.hpp"				
 #include "MatrixSample.hpp"			
 #include "MetaProgUtils.hpp"			
 #include "Minimize.hpp"				

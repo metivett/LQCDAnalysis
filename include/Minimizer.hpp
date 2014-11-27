@@ -67,6 +67,7 @@ public:
 	virtual Result minimize(
 		const ScalarFunction<Scalar>& F, 
 		const std::vector<Scalar>& x0,
+		const std::vector<Scalar>& e0,
 		const std::vector<ScalarConstraint<Scalar>>& c) =0;
 	Result minimize(
 		const ScalarFunction<Scalar>& F, 

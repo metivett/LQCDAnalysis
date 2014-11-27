@@ -8,7 +8,10 @@
 #ifndef LINALGUTILS_HPP
 #define LINALGUTILS_HPP
 
-namespace LQCDA {
+#include "Globals.hpp"
+#include <Eigen/SVD>
+
+BEGIN_NAMESPACE(LQCDA)
 
 template<typename T, std::size_t N>
 T Dot(T (&x)[N], T (&y)[N])
@@ -23,7 +26,7 @@ T Dot(T (&x)[N], T (&y)[N])
 template<typename T>
 T Dot(const std::vector<T>& x, const std::vector<T>& y)
 {
-	std::assert(x.size() == y.size());
+	assert(x.size() == y.size());
 	T res = x[0]*y[0];
 	for(int n=1; n<x.size(); n++)
 	{
@@ -55,7 +58,7 @@ T DotSquare(const std::vector<T>& x)
 	return res;
 }
 inline double DotSquare(double x) { return x*x; }
-inline inline float DotSquare(float x) { return x*x; }
+inline float DotSquare(float x) { return x*x; }
 
 template<typename T, std::size_t N>
 T WeightedDot(T (&x)[N], T (&y)[N], T (&w)[N])
@@ -70,7 +73,7 @@ T WeightedDot(T (&x)[N], T (&y)[N], T (&w)[N])
 template<typename T>
 T WeightedDot(const std::vector<T>& x, const std::vector<T>& y, const std::vector<T>& w)
 {
-	std::assert(x.size() == y.size() && x.size() == w.size());
+	assert(x.size() == y.size() && x.size() == w.size());
 	T res = x[0]*y[0]*w[0];
 	for(int n=1; n<x.size(); n++)
 	{
@@ -94,7 +97,7 @@ T WeightedDotSquare(T (&x)[N], T (&w)[N])
 template<typename T>
 T WeightedDotSquare(const std::vector<T>& x, const std::vector<T>& w)
 {
-	std::assert(x.size() == w.size());
+	assert(x.size() == w.size());
 	T res = x[0]*x[0]*w[0];
 	for(int n=1; n<x.size(); n++)
 	{
@@ -111,14 +114,32 @@ std::vector<T> Inverse(const std::vector<T>& x)
 	std::vector<T> res(x.size());
 	for(int n=1; n<x.size(); n++)
 	{
-		std::assert(x[n] != 0.);
+		assert(x[n] != 0.);
 		res[n] = 1./x[n];
 	}
 	return res;
 }
-inline double Inverse(double x) { std::assert(x != 0.); return 1./x; }
-inline float Inverse(float x) { std::assert(x != 0.); return 1./x; }
+inline double Inverse(double x) { assert(x != 0.); return 1./x; }
+inline float Inverse(float x) { assert(x != 0.); return 1./x; }
 
+template<typename MatrixType>
+MatrixType PseudoInverse(const MatrixType& mat, double pinv_tol = 1.e-6)
+{
+	Eigen::JacobiSVD<MatrixType> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	auto singularValues = svd.singularValues();
+	
+	FOR_VEC(singularValues, i)
+	{
+		if(singularValues(i) > pinv_tol)
+			singularValues(i) = 1./singularValues(i);
+		else
+			singularValues(i) = 0.;
+	}
+
+	return (svd.matrixV()*singularValues.asDiagonal()*svd.matrixU().transpose());
 }
+
+
+END_NAMESPACE // LQCDA
 
 #endif

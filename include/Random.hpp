@@ -24,7 +24,7 @@ const int RG_STATE_SIZE = 105;
  *
  *   	"User's guide for ranlxs and ranlxd v3.2" (December 2005)
  *
- *	   "Algorithms used in ranlux v3.0" (May 2001)
+ *	    "Algorithms used in ranlux v3.0" (May 2001)
  *
  * 		for a detailed description.
  *
