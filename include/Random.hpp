@@ -8,6 +8,8 @@
 #ifndef RANDOM_HPP_
 #define RANDOM_HPP_
 
+#include <set>
+
 namespace LQCDA {
 
 const int RG_STATE_SIZE = 105;
@@ -57,6 +59,7 @@ public:
 	double getUniform(double a, double b);
 	unsigned int getUniformInt(const unsigned int max);
 	double getNormal(const double mean, const double sigma);
+	std::set<unsigned int> getUniformIntSample(const unsigned int max, const unsigned int n);
 
 	int size() { return RG_STATE_SIZE; }
 private:

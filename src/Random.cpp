@@ -603,6 +603,25 @@ double RandGen::getNormal(const double mean, const double sigma)
 	return sigma*rx*sqrt(-2.0*log(sqnrm)/sqnrm) + mean;
 }
 
+/*
+Returns a random sample of size n uniformly picked within all n-samples of [1;n[
+using R.Floyd's algorithm
+*/
+std::set<unsigned int> RandGen::getUniformIntSample(const unsigned int max, const unsigned int n)
+{
+    std::set<unsigned int> res;
+    unsigned int end = max + 1;
+    for(unsigned int i = end - n; i < end; ++i)
+    {
+        unsigned int ri = getUniformInt(i + 1);
+        if(res.count(ri))
+            res.insert(i);
+        else
+            res.insert(ri);
+    }
+    return res;
+}
+
 }	// namespace LQCDA
 
 
