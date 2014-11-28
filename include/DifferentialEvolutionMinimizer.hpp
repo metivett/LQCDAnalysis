@@ -10,6 +10,7 @@
 
 #include "Minimizer.hpp"
 #include "Random.hpp"
+#include "LinalgUtils.hpp"
 
 BEGIN_NAMESPACE(LQCDA)
 BEGIN_NAMESPACE(MIN)
@@ -61,10 +62,15 @@ public: // Constructors/Destructor
     : population_size(pop_size)
     , crossover_probability(0.9)
     , scaling_factor(0.8)
-    , max_iter(10000)
+    , dither(false)
+    , tolerance(1e-08)
+    , max_iter(50000)
     {}
 
     virtual ~DifferentialEvolutionMinimizer() noexcept = default;
+
+public: // Options
+    virtual MinimizerOptions& options() override { return m_Options; }
 
 public: // Minimize
     using Minimizer<T>::minimize;
@@ -76,9 +82,12 @@ public: // Minimize
 
 public: // Settings
     // INHERIT_MINIMIZER_SETTINGS
+    MinimizerOptions m_Options;
     unsigned int population_size;
     double crossover_probability;
     double scaling_factor;
+    bool dither;
+    double tolerance;
     unsigned int max_iter;
 
 };
@@ -110,6 +119,10 @@ typename Minimizer<T>::Result DifferentialEvolutionMinimizer<T>::minimize(
     // Initialize random numbers generator
     RandGen rng;
 
+    std::vector<T> * current_best_pt, * old_best_pt;
+    std::vector<T> best_old_pts_diff(xDim);
+    T current_min, old_min, min_buf;
+
     // Initialize population
     std::unique_ptr<std::vector<std::vector<T>>> x(new std::vector<std::vector<T>>(population_size));
     for(auto &xi: (*x))
@@ -121,6 +134,20 @@ typename Minimizer<T>::Result DifferentialEvolutionMinimizer<T>::minimize(
             xi[k] = rng.getNormal(x0[k], e0[k]);
         }
     }
+    // Get best individual
+    current_min = F((*x)[0]);
+    current_best_pt = &(*x)[0];
+    for(int i=1; i<population_size; ++i)
+    {
+        min_buf = F((*x)[i]);
+        if(min_buf < current_min)
+        {
+            current_min = min_buf;
+            current_best_pt = &(*x)[i];
+        }
+    }
+    old_min = current_min;
+    old_best_pt = current_best_pt;
 
     // Evolution
     unsigned int iter = 0;
@@ -135,14 +162,53 @@ typename Minimizer<T>::Result DifferentialEvolutionMinimizer<T>::minimize(
             {
                 if(rng.getUniform(0., 1.) < crossover_probability)
                 {
-                    unsigned int u = rng.getUniformInt(population_size);
-                    unsigned int v = rng.getUniformInt(population_size);
-                    unsigned int w = rng.getUniformInt(population_size);
-                    // TODO (*xnew)[i][k] = 
+                    std::set<unsigned int> uvw = rng.getUniformIntSample(population_size-1, 3);
+                    auto uvw_it = uvw.begin();
+                    unsigned int u = (*uvw_it)==i? population_size-1: (*uvw_it);++uvw_it;
+                    unsigned int v = (*uvw_it)==i? population_size-1: (*uvw_it);++uvw_it;
+                    unsigned int w = (*uvw_it)==i? population_size-1: (*uvw_it);
+                    (*xnew)[i][k] = (*x)[u][k] + scaling_factor*((*x)[v][k] - (*x)[w][k]);
                 }
             }
         }
+        for(int i=0; i<population_size; ++i)
+        {
+            if(F((*xnew)[i]) < F((*x)[i]))
+                (*x)[i] = (*xnew)[i];
+        }
+
+        // Find best individual
+        current_min = F((*x)[0]);
+        current_best_pt = &(*x)[0];
+        for(int i=1; i<population_size; ++i)
+        {
+            min_buf = F((*x)[i]);
+            if(min_buf < current_min)
+            {
+                current_min = min_buf;
+                current_best_pt = &(*x)[i];
+            }
+        }
+
+        // Check for convergence
+        for(int k=0; k<xDim; ++k)
+            best_old_pts_diff[k] = (*current_best_pt)[k] - (*old_best_pt)[k];
+        if(current_min - old_min < tolerance && sqrt(DotSquare(best_old_pts_diff)) < tolerance)
+            converged = true;
+
+        // If dither, randomly pick next generation scaling factor
+        if(dither)
+            scaling_factor = rng.getUniform(0.5, 1.);
+
+        iter++;
     }
+
+    typename Minimizer<T>::Result result;
+    result.final_cost = current_min;
+    result.is_valid = converged;
+    result.minimum = *current_best_pt;
+
+    return result;
 }
 
 END_NAMESPACE
