@@ -142,6 +142,7 @@ int main()
     cout << mySample.mean() << endl;
     cout << mySample.median() << endl;
     cout << mySample.variance() << endl;
+    cout << mySample.medianDeviation() << endl;
     cout << endl;
 
     Sample<double> mySample2(4);
@@ -152,6 +153,7 @@ int main()
     cout << mySample2.mean() << endl;
     cout << mySample2.median() << endl;
     cout << mySample2.variance() << endl;
+    cout << mySample.medianDeviation() << endl;
     cout << endl;
 
     Sample<Matrix<double>> myMatSample(4, 2, 1);
@@ -162,6 +164,7 @@ int main()
     cout << myMatSample.mean() << endl;
     cout << myMatSample.median() << endl;
     cout << myMatSample.variance() << endl;
+    cout << mySample.medianDeviation() << endl;
 }
 
 

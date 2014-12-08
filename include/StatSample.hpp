@@ -120,6 +120,16 @@ public:
                  - REDUX::tensorProd(m_Sample.redux(&REDUX::sum<SampleElement>), other.m_Sample.redux(&REDUX::sum<SampleElement>)) / static_cast<double>(size()) )
                / static_cast<double>(size() - 1);
     }
+
+    SampleElement standardDeviation() const
+    {
+        return std::sqrt(this->variance());
+    }
+    SampleElement medianDeviation() const
+    {
+        Array<SampleElement, Dynamic, 1> tmp_Sample = (m_Sample - this->median()).abs();
+        return LQCDA::median(tmp_Sample.data(), tmp_Sample.data()+tmp_Sample.size());
+    }
 };
 
 END_NAMESPACE // LQCDA
