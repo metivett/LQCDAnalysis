@@ -16,83 +16,101 @@ BEGIN_NAMESPACE(LQCDA)
 template<typename T, std::size_t N>
 T Dot(T (&x)[N], T (&y)[N])
 {
-	T res = x[0]*y[0];
-	for(int n=1; n<N; n++)
-	{
-		res += x[n]*y[n];
-	}
-	return res;
+    T res = x[0] * y[0];
+    for (int n = 1; n < N; n++)
+    {
+        res += x[n] * y[n];
+    }
+    return res;
 }
 template<typename T>
-T Dot(const std::vector<T>& x, const std::vector<T>& y)
+T Dot(const std::vector<T> &x, const std::vector<T> &y)
 {
-	assert(x.size() == y.size());
-	T res = x[0]*y[0];
-	for(int n=1; n<x.size(); n++)
-	{
-		res += x[n]*y[n];
-	}
-	return res;
+    assert(x.size() == y.size());
+    T res = x[0] * y[0];
+    for (int n = 1; n < x.size(); n++)
+    {
+        res += x[n] * y[n];
+    }
+    return res;
 }
-inline double Dot(double x, double y) { return x*y; }
-inline float Dot(float x, float y) { return x*y; }
+inline double Dot(double x, double y)
+{
+    return x * y;
+}
+inline float Dot(float x, float y)
+{
+    return x * y;
+}
 
 template<typename T, std::size_t N>
 T DotSquare(T (&x)[N])
 {
-	T res = x[0]*x[0];
-	for(int n=1; n<N; n++)
-	{
-		res += x[n]*x[n];
-	}
-	return res;
+    T res = x[0] * x[0];
+    for (int n = 1; n < N; n++)
+    {
+        res += x[n] * x[n];
+    }
+    return res;
 }
 template<typename T>
-T DotSquare(const std::vector<T>& x)
+T DotSquare(const std::vector<T> &x)
 {
-	T res = x[0]*x[0];
-	for(int n=1; n<x.size(); n++)
-	{
-		res += x[n]*x[n];
-	}
-	return res;
+    T res = x[0] * x[0];
+    for (int n = 1; n < x.size(); n++)
+    {
+        res += x[n] * x[n];
+    }
+    return res;
 }
-inline double DotSquare(double x) { return x*x; }
-inline float DotSquare(float x) { return x*x; }
+inline double DotSquare(double x)
+{
+    return x * x;
+}
+inline float DotSquare(float x)
+{
+    return x * x;
+}
 
 template<typename T, std::size_t N>
 T WeightedDot(T (&x)[N], T (&y)[N], T (&w)[N])
 {
-	T res = x[0]*y[0]*w[0];
-	for(int n=1; n<N; n++)
-	{
-		res += x[n]*y[n]*w[n];
-	}
-	return res;
+    T res = x[0] * y[0] * w[0];
+    for (int n = 1; n < N; n++)
+    {
+        res += x[n] * y[n] * w[n];
+    }
+    return res;
 }
 template<typename T>
-T WeightedDot(const std::vector<T>& x, const std::vector<T>& y, const std::vector<T>& w)
+T WeightedDot(const std::vector<T> &x, const std::vector<T> &y, const std::vector<T> &w)
 {
-	assert(x.size() == y.size() && x.size() == w.size());
-	T res = x[0]*y[0]*w[0];
-	for(int n=1; n<x.size(); n++)
-	{
-		res += x[n]*y[n]*w[n];
-	}
-	return res;
+    assert(x.size() == y.size() && x.size() == w.size());
+    T res = x[0] * y[0] * w[0];
+    for (int n = 1; n < x.size(); n++)
+    {
+        res += x[n] * y[n] * w[n];
+    }
+    return res;
 }
-inline double WeightedDot(double x, double y, double w) { return x*y*w; }
-inline float WeightedDot(float x, float y, float w) { return x*y*w; }
+inline double WeightedDot(double x, double y, double w)
+{
+    return x * y * w;
+}
+inline float WeightedDot(float x, float y, float w)
+{
+    return x * y * w;
+}
 
 template<typename T, std::size_t N>
 T WeightedDotSquare(T (&x)[N], T (&w)[N])
 {
-	T res = x[0]*x[0]*w[0];
-	for(int n=1; n<N; n++)
-	{
-		res += x[n]*x[n]*w[n];
-	}
-	return res;
+    T res = x[0] * x[0] * w[0];
+    for (int n = 1; n < N; n++)
+    {
+        res += x[n] * x[n] * w[n];
+    }
+    return res;
 }
 template<typename T>
 T WeightedDotSquare(const std::vector<T>& x, const std::vector<T>& w)
@@ -137,9 +155,11 @@ MatrixType PseudoInverse(const MatrixType& mat, double pinv_tol = 1.e-6)
 	}
 
 	return (svd.matrixV()*singularValues.asDiagonal()*svd.matrixU().transpose());
+
 }
 
 
 END_NAMESPACE // LQCDA
+
 
 #endif
