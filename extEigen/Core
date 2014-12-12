@@ -22,4 +22,6 @@ class MatrixViewRange;
 #define EIGEN_DENSEBASE_PLUGIN "extEigen/MatrixViewMethods.hpp"
 #include <Eigen/Core>
 
+#include <extEigen/MatrixGlobalFunctions.hpp>
+
 #include <extEigen/MatrixViewRange.hpp>
