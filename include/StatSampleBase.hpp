@@ -16,6 +16,7 @@ BEGIN_NAMESPACE(LQCDA)
 BEGIN_NAMESPACE(internal)
 
 template<typename T> struct sample_traits;
+template<typename T> struct sample_traits<const T> : sample_traits<T> {};
 
 END_NAMESPACE // internal
 
@@ -72,8 +73,8 @@ public: // Statistics
     SampleElement median() const { return derived().median(); }
     SampleElement variance() const { return derived().variance(); }
     SampleElement covariance(const StatSampleBase<Derived> &other) const { return this->derived().covariance(other.derived()); }
-    Matrix<SampleElement> varianceMatrix() const { return derived().varianceMatrix(); }
-    Matrix<SampleElement> covarianceMatrix(const StatSampleBase<Derived> &other) const { return this->derived().covarianceMatrix(other.derived()); }
+    Matrix<ScalarType> varianceMatrix() const { return derived().varianceMatrix(); }
+    Matrix<ScalarType> covarianceMatrix(const StatSampleBase<Derived> &other) const { return this->derived().covarianceMatrix(other.derived()); }
     SampleElement standardDeviation() const { return derived().standardDeviation(); }
     SampleElement medianDeviation() const { return derived().medianDeviation(); }
 

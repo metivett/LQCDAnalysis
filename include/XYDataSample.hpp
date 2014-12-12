@@ -98,7 +98,7 @@ public:
     const XYDataMap<T> operator[](unsigned int s) const;
 
     // Statistics
-    XYData<T> mean(unsigned int begin = 0, int n = -1) const;
+    XYData<T> mean() const;
 
 private:
     void update_Cxx() const;
@@ -496,11 +496,11 @@ typename XYDataSample<T>::range XYDataSample<T>::check_range(std::initializer_li
 }
 
 template<typename T>
-XYData<T> XYDataSample<T>::mean(unsigned int begin, int n) const
+XYData<T> XYDataSample<T>::mean() const
 {
     XYData<T> result(_nPts, _xDim, _yDim);
-    result.x({}, {}) = _x.mean(begin, n);
-    result.y({}, {}) = _y.mean(begin, n);
+    result.x({}, {}) = _x.mean();
+    result.y({}, {}) = _y.mean();
     for(int kx1 = 0; kx1 < _xDim; kx1++)
     {
     	for(int kx2 = 0; kx2 < _xDim; kx2++)

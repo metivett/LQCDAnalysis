@@ -135,17 +135,16 @@ private: // ScalarSampleImpl
 
     // };
 
-protected:
-    // Typedefs
+public: // Typedefs
     typedef StatSample < Sample<Matrix<T> >> Base;
-    typedef T Scalar;
-    typedef Matrix<T> SampleElement;
+    typedef Sample<Matrix<T>> This;
+    LQCDA_SAMPLE_TRAITS_TYPEDEFS(This)
 
 public:
     typedef StatSampleBlock<Sample<Matrix<T>>> BlockSample;
-    typedef StatSampleBlock<const Sample<Matrix<T>>> ConstBlockSample;
+    typedef const StatSampleBlock<const Sample<Matrix<T>>> ConstBlockSample;
     typedef StatSampleBlock<Sample<Matrix<T>>, 1, 1> ScalarSample;
-    typedef StatSampleBlock<const Sample<Matrix<T>>, 1, 1> ConstScalarSample;
+    typedef const StatSampleBlock<const Sample<Matrix<T>>, 1, 1> ConstScalarSample;
 
 private:
     // unsigned int _nRow, _nCol;

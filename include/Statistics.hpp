@@ -187,28 +187,28 @@ T median(const std::vector<T> &v)
 //     return med;
 // }
 
-// template<typename Derived>
-// typename MatrixExpr<Derived>::Scalar mean(const MatrixExpr<Derived>& mat)
-// {
-//  typedef typename MatrixExpr<Derived>::Scalar Scalar;
+template<typename Derived>
+typename MatrixExpr<Derived>::Scalar mean(const MatrixExpr<Derived>& mat)
+{
+ typedef typename MatrixExpr<Derived>::Scalar Scalar;
 
-//       return mat.redux(&REDUX::sum<Scalar>) / static_cast<double>(mat.size());
-// }
+      return mat.redux(&REDUX::sum<Scalar>) / static_cast<double>(mat.size());
+}
 
-// template<typename Derived>
-// typename MatrixExpr<Derived>::Scalar variance(const MatrixExpr<Derived>& mat)
-// {
-//  typedef typename MatrixExpr<Derived>::Scalar Scalar;
-//  Scalar res;
-//  double len = mat.size();
-//  auto mat_sum = mat.redux(&REDUX::sum<Scalar>);
+template<typename Derived>
+typename MatrixExpr<Derived>::Scalar variance(const MatrixExpr<Derived>& mat)
+{
+ typedef typename MatrixExpr<Derived>::Scalar Scalar;
+ Scalar res;
+ double len = mat.size();
+ auto mat_sum = mat.redux(&REDUX::sum<Scalar>);
 
-//  res = ( mat.binaryExpr(mat, &REDUX::prod<Scalar>).redux(&REDUX::sum<Scalar>)
-//          - REDUX::prod(mat_sum, mat_sum) / (len) )
-//          / (len - 1);
+ res = ( mat.binaryExpr(mat, &REDUX::prod<Scalar>).redux(&REDUX::sum<Scalar>)
+         - REDUX::prod(mat_sum, mat_sum) / (len) )
+         / (len - 1);
 
-//  return res;
-// }
+ return res;
+}
 
 END_NAMESPACE // LQCDA
 

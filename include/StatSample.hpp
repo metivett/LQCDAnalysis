@@ -30,8 +30,8 @@ template<typename Derived>
 class StatSample
     : public StatSampleBase<Derived>
 {
-public:
-    typedef typename internal::sample_traits<Derived>::SampleElement SampleElement;
+public: // Derived
+    LQCDA_SAMPLE_TRAITS_TYPEDEFS(Derived)
 
 protected:
     Array<SampleElement, Dynamic, 1> m_Sample;
@@ -106,11 +106,11 @@ public: // Statistics
                  - REDUX::cwiseProd(m_Sample.redux(&REDUX::sum<SampleElement>), other.m_Sample.redux(&REDUX::sum<SampleElement>)) / static_cast<double>(size()) )
                / static_cast<double>(size() - 1);
     }
-    Matrix<SampleElement> varianceMatrix() const
+    Matrix<ScalarType> varianceMatrix() const
     {
         return covarianceMatrix(*this);
     }
-    Matrix<SampleElement> covarianceMatrix(const StatSample<Derived> &other) const
+    Matrix<ScalarType> covarianceMatrix(const StatSample<Derived> &other) const
     {
         // COV(X, Y) = 1/(n-1) (sum(xi * yi) - 1/n (sum(xi) sum(yi)))
         return ( m_Sample.binaryExpr(other.m_Sample, &REDUX::tensorProd<SampleElement>).redux(&REDUX::sum<SampleElement>)

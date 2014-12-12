@@ -11,6 +11,7 @@
 #include "Globals.hpp"
 #include "Math.hpp"
 #include "StatSampleBase.hpp"
+#include "Sample.hpp"
 #include "Reduction.hpp"
 #include "Statistics.hpp"
 
@@ -42,14 +43,14 @@ public: // Typedefs
     typedef typename std::remove_const<S>::type NonConstSType;
 
 protected: // Data
-    const S &m_Sample;
+    S &m_Sample;
     index_t m_startRow, m_startCol;
     index_t m_nRow, m_nCol;
 
 public: // Constructors and Destructor
     // Fixed-size constructor
     StatSampleBlock(
-        const S &s,
+        S &s,
         const index_t i, const index_t j)
         : m_Sample(s)
         , m_startRow(i)
@@ -59,7 +60,7 @@ public: // Constructors and Destructor
     {}
     // Dynamic-size constructor
     StatSampleBlock(
-        const S &s,
+        S &s,
         const index_t i, const index_t j,
         const index_t nRow, const index_t nCol)
         : m_Sample(s)
@@ -83,6 +84,14 @@ public: // Constructors and Destructor
     ~StatSampleBlock() = default;
 
 public: // Assignment
+    StatSampleBlock &operator=(const StatSampleBlock &sampleBlock)
+    {
+        for (unsigned int s = 0; s < m_Sample.size(); ++s)
+        {
+            m_Sample[s].block(m_startRow, m_startCol, m_nRow, m_nCol) = sampleBlock[s];
+        }
+        return *this;
+    }
     StatSampleBlock &operator=(const S &sample)
     {
         for (unsigned int s = 0; s < m_Sample.size(); ++s)
@@ -94,6 +103,16 @@ public: // Assignment
     StatSampleBlock &operator=(const S && sample)
     {
         *this = sample;
+        return *this;
+    }
+    template<typename T>
+    StatSampleBlock &operator=(const Sample<T> &sample)
+    {
+        assert(sample.rows() == 1 && sample.cols() == 1 && rows() == 1 && cols() == 1);
+        for (unsigned int s = 0; s < m_Sample.size(); ++s)
+        {
+            m_Sample[s](m_nRow, m_nCol) = sample[s];
+        }
         return *this;
     }
 
@@ -122,17 +141,15 @@ public: // Queries
 public: // Subscript
     SampleElementRef operator[](unsigned int s)
     {
-        // return Block<SampleElement, BlockRows, BlockCols>(m_Sample[s], m_startRow, m_startCol, m_nRow, m_nCol);
         return m_Sample[s].template block<BlockRows, BlockCols>(m_startRow, m_startCol, m_nRow, m_nCol);
     }
     ConstSampleElementRef operator[](unsigned int s) const
     {
-        // return Block<SampleElement, BlockRows, BlockCols>(m_Sample[s], m_startRow, m_startCol, m_nRow, m_nCol);
         return m_Sample[s].template block<BlockRows, BlockCols>(m_startRow, m_startCol, m_nRow, m_nCol);
     }
 
 public: // Utilities
-    const typename std::decay<S>::type& nestedSample() const
+    typename std::decay<S>::type& nestedSample() const
     {
         return m_Sample;
     }
@@ -187,12 +204,12 @@ public: // Statistics
 
         return ( sxiyi - REDUX::cwiseProd(sxi, syi) / static_cast<double>(size()) ) / static_cast<double>(size() - 1);
     }
-    Matrix<SampleElement> varianceMatrix() const
+    Matrix<ScalarType> varianceMatrix() const
     {
         return covarianceMatrix(*this);
     }
     template<typename OtherDerived>
-    Matrix<SampleElement> covarianceMatrix(const StatSampleBase<OtherDerived> &other) const
+    Matrix<ScalarType> covarianceMatrix(const StatSampleBase<OtherDerived> &other) const
     {
         if ((this->cols() != 1) || (other.cols() != 1))
         {
