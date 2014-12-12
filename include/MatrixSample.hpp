@@ -11,6 +11,7 @@
 #include "Globals.hpp"
 #include "TypeTraits.hpp"
 #include "Sample.hpp"
+#include "StatSampleBlock.hpp"
 
 #include <functional>
 
@@ -22,6 +23,9 @@ template<typename T>
 struct sample_traits<Sample<Matrix<T>>>
 {
     typedef Matrix<T> SampleElement;
+    typedef Matrix<T>& SampleElementRef;
+    typedef const Matrix<T>& ConstSampleElementRef;
+    typedef T ScalarType;
 };
 
 END_NAMESPACE // internal
@@ -31,105 +35,105 @@ class Sample<Matrix<T>>
 : public StatSample<Sample<Matrix<T>>>
 {
 private: // BlockSampleImpl
-    template<typename S>
-    class BlockSampleImpl
-    {
-    private:
-        // Typedefs
-        typedef typename
-        if_<std::is_const<S>::value,
-            const typename S::SampleElement, typename S::SampleElement>::result SampleElement;
-        typedef typename std::remove_const<S>::type NonConstSType;
-        typedef Block<SampleElement> BlockType;
-        typedef ConstBlock<SampleElement> ConstBlockType;
+    // template<typename S>
+    // class BlockSampleImpl
+    // {
+    // private:
+    //     // Typedefs
+    //     typedef typename
+    //     if_<std::is_const<S>::value,
+    //         const typename S::SampleElement, typename S::SampleElement>::result SampleElement;
+    //     typedef typename std::remove_const<S>::type NonConstSType;
+    //     typedef Block<SampleElement> BlockType;
+    //     typedef ConstBlock<SampleElement> ConstBlockType;
 
-    private:
-        // Data
-        S &_Sample;
-        index_t _i, _j, _nRow, _nCol;
+    // private:
+    //     // Data
+    //     S &_Sample;
+    //     index_t _i, _j, _nRow, _nCol;
 
-    public:
-        // Constructors
-        BlockSampleImpl(
-            S &s,
-            const index_t i, const index_t j,
-            const index_t nRow, const index_t nCol);
-        BlockSampleImpl(BlockSampleImpl<NonConstSType> &b);
-        BlockSampleImpl(BlockSampleImpl<NonConstSType>  &&b);
-        // Destructor
-        ~BlockSampleImpl() = default;
-        // Assignment
-        BlockSampleImpl<S> &operator=(const S &sample);
-        BlockSampleImpl<S> &operator=(const S && sample);
+    // public:
+    //     // Constructors
+    //     BlockSampleImpl(
+    //         S &s,
+    //         const index_t i, const index_t j,
+    //         const index_t nRow, const index_t nCol);
+    //     BlockSampleImpl(BlockSampleImpl<NonConstSType> &b);
+    //     BlockSampleImpl(BlockSampleImpl<NonConstSType>  &&b);
+    //     // Destructor
+    //     ~BlockSampleImpl() = default;
+    //     // Assignment
+    //     BlockSampleImpl<S> &operator=(const S &sample);
+    //     BlockSampleImpl<S> &operator=(const S && sample);
 
-        // Accessors
-        S &sample();
-        const S &sample() const;
-        unsigned int size() const;
-        unsigned int rows() const;
-        unsigned int cols() const;
-        index_t startRow() const;
-        index_t startCol() const;
+    //     // Accessors
+    //     S &sample();
+    //     const S &sample() const;
+    //     unsigned int size() const;
+    //     unsigned int rows() const;
+    //     unsigned int cols() const;
+    //     index_t startRow() const;
+    //     index_t startCol() const;
 
-        // Operators
-        BlockType operator[](unsigned int s);
-        ConstBlockType operator[](unsigned int s) const;
+    //     // Operators
+    //     BlockType operator[](unsigned int s);
+    //     ConstBlockType operator[](unsigned int s) const;
 
-        // Statistics
-        SampleElement mean(unsigned int begin = 0, int n = -1) const;
-        SampleElement covariance(const Sample<Matrix<T>> &sample, unsigned int begin = 0, int n = -1) const;
-        auto covarianceMatrix(const Sample<Matrix<T>> &sample, unsigned int begin = 0, int n = -1) const
-        -> decltype(REDUX::tensorProd(
-                        std::declval<Sample<Matrix<T>>>().segment(begin, n).redux(&REDUX::sum<SampleElement>),
-                        sample.segment(begin, n).redux(&REDUX::sum<SampleElement>)));
-        SampleElement variance(unsigned int begin = 0, int n = -1) const;
-        auto varianceMatrix(unsigned int begin = 0, int n = -1) const
-        -> decltype(std::declval<Sample<Matrix<T>>>().covarianceMatrix(std::declval<Sample<Matrix<T>>>(), begin, n));
+    //     // Statistics
+    //     SampleElement mean(unsigned int begin = 0, int n = -1) const;
+    //     SampleElement covariance(const Sample<Matrix<T>> &sample, unsigned int begin = 0, int n = -1) const;
+    //     auto covarianceMatrix(const Sample<Matrix<T>> &sample, unsigned int begin = 0, int n = -1) const
+    //     -> decltype(REDUX::tensorProd(
+    //                     std::declval<Sample<Matrix<T>>>().segment(begin, n).redux(&REDUX::sum<SampleElement>),
+    //                     sample.segment(begin, n).redux(&REDUX::sum<SampleElement>)));
+    //     SampleElement variance(unsigned int begin = 0, int n = -1) const;
+    //     auto varianceMatrix(unsigned int begin = 0, int n = -1) const
+    //     -> decltype(std::declval<Sample<Matrix<T>>>().covarianceMatrix(std::declval<Sample<Matrix<T>>>(), begin, n));
 
-    };
+    // };
 
 private: // ScalarSampleImpl
-    template<typename S>
-    class ScalarSampleImpl
-    {
-    private:
-        // Typedefs
-        typedef typename S::Scalar Scalar;
-        typedef typename
-        if_<std::is_const<S>::value,
-            const typename S::SampleElement, typename S::SampleElement>::result SampleElement;
-        typedef typename std::remove_const<S>::type NonConstSType;
+    // template<typename S>
+    // class ScalarSampleImpl
+    // {
+    // private:
+    //     // Typedefs
+    //     typedef typename S::Scalar Scalar;
+    //     typedef typename
+    //     if_<std::is_const<S>::value,
+    //         const typename S::SampleElement, typename S::SampleElement>::result SampleElement;
+    //     typedef typename std::remove_const<S>::type NonConstSType;
 
-    private:
-        // Data
-        S &_Sample;
-        index_t _i, _j;
+    // private:
+    //     // Data
+    //     S &_Sample;
+    //     index_t _i, _j;
 
-    public:
-        // Constructors
-        ScalarSampleImpl(
-            S &s,
-            const index_t i, const index_t j);
-        ScalarSampleImpl(ScalarSampleImpl<NonConstSType> &b);
-        ScalarSampleImpl(ScalarSampleImpl<NonConstSType>  &&b);
-        // Destructor
-        ~ScalarSampleImpl() = default;
-        // Assignment
-        ScalarSampleImpl<S> &operator=(const S &sample);
-        ScalarSampleImpl<S> &operator=(const S && sample);
-        ScalarSampleImpl<S> &operator=(const Sample<Scalar> &sample);
-        ScalarSampleImpl<S> &operator=(const Sample<Scalar> && sample);
+    // public:
+    //     // Constructors
+    //     ScalarSampleImpl(
+    //         S &s,
+    //         const index_t i, const index_t j);
+    //     ScalarSampleImpl(ScalarSampleImpl<NonConstSType> &b);
+    //     ScalarSampleImpl(ScalarSampleImpl<NonConstSType>  &&b);
+    //     // Destructor
+    //     ~ScalarSampleImpl() = default;
+    //     // Assignment
+    //     ScalarSampleImpl<S> &operator=(const S &sample);
+    //     ScalarSampleImpl<S> &operator=(const S && sample);
+    //     ScalarSampleImpl<S> &operator=(const Sample<Scalar> &sample);
+    //     ScalarSampleImpl<S> &operator=(const Sample<Scalar> && sample);
 
-        // Accessors
-        S &sample();
-        const S &sample() const;
-        unsigned int size() const;
+    //     // Accessors
+    //     S &sample();
+    //     const S &sample() const;
+    //     unsigned int size() const;
 
-        // Operators
-        Scalar operator[](unsigned int s);
-        const Scalar operator[](unsigned int s) const;
+    //     // Operators
+    //     Scalar operator[](unsigned int s);
+    //     const Scalar operator[](unsigned int s) const;
 
-    };
+    // };
 
 protected:
     // Typedefs
@@ -138,10 +142,10 @@ protected:
     typedef Matrix<T> SampleElement;
 
 public:
-    typedef BlockSampleImpl<Sample<Matrix<T>>> BlockSample;
-    typedef BlockSampleImpl<const Sample<Matrix<T>>> ConstBlockSample;
-    typedef ScalarSampleImpl<Sample<Matrix<T>>> ScalarSample;
-    typedef ScalarSampleImpl<const Sample<Matrix<T>>> ConstScalarSample;
+    typedef StatSampleBlock<Sample<Matrix<T>>> BlockSample;
+    typedef StatSampleBlock<const Sample<Matrix<T>>> ConstBlockSample;
+    typedef StatSampleBlock<Sample<Matrix<T>>, 1, 1> ScalarSample;
+    typedef StatSampleBlock<const Sample<Matrix<T>>, 1, 1> ConstScalarSample;
 
 private:
     // unsigned int _nRow, _nCol;
@@ -419,205 +423,205 @@ typename Sample<Matrix<T>>::ConstScalarSample Sample<Matrix<T>>::operator()(inde
 
 
 
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(
-                   S &s,
-                   const index_t i, const index_t j,
-                   const index_t nRow, const index_t nCol)
-                   : _Sample(s)
-                   , _i(i)
-                   , _j(j)
-                   , _nRow(nRow)
-                   , _nCol(nCol)
-{}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(BlockSampleImpl<NonConstSType> &b)
-                   : _Sample(b.sample())
-                   , _i(b.startRow())
-                   , _j(b.startCol())
-                   , _nRow(b.rows())
-                   , _nCol(b.cols())
-{}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(BlockSampleImpl<NonConstSType>  &&b)
-                   : BlockSampleImpl(b)
-{}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(
+//                    S &s,
+//                    const index_t i, const index_t j,
+//                    const index_t nRow, const index_t nCol)
+//                    : _Sample(s)
+//                    , _i(i)
+//                    , _j(j)
+//                    , _nRow(nRow)
+//                    , _nCol(nCol)
+// {}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(BlockSampleImpl<NonConstSType> &b)
+//                    : _Sample(b.sample())
+//                    , _i(b.startRow())
+//                    , _j(b.startCol())
+//                    , _nRow(b.rows())
+//                    , _nCol(b.cols())
+// {}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::BlockSampleImpl<S>::BlockSampleImpl(BlockSampleImpl<NonConstSType>  &&b)
+//                    : BlockSampleImpl(b)
+// {}
 
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::BlockSampleImpl<S> &Sample<Matrix<T>>::BlockSampleImpl<S>::operator=(const S &sample)
-{
-    FOR_SAMPLE(_Sample, s)
-    {
-        _Sample[s].block(_i, _j, _nRow, _nCol) = sample[s];
-    }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::BlockSampleImpl<S> &Sample<Matrix<T>>::BlockSampleImpl<S>::operator=(const S &sample)
+// {
+//     FOR_SAMPLE(_Sample, s)
+//     {
+//         _Sample[s].block(_i, _j, _nRow, _nCol) = sample[s];
+//     }
 
-    return *this;
-}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::BlockSampleImpl<S> &Sample<Matrix<T>>::BlockSampleImpl<S>::operator=(const S && sample)
-{
-    *this = sample;
-    return *this;
-}
+//     return *this;
+// }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::BlockSampleImpl<S> &Sample<Matrix<T>>::BlockSampleImpl<S>::operator=(const S && sample)
+// {
+//     *this = sample;
+//     return *this;
+// }
 
-template<typename T>
-template<typename S>
-S &Sample<Matrix<T>>::BlockSampleImpl<S>::sample()
-{
-    return _Sample;
-}
-template<typename T>
-template<typename S>
-const S &Sample<Matrix<T>>::BlockSampleImpl<S>::sample() const
-{
-    return _Sample;
-}
-template<typename T>
-template<typename S>
-unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::size() const
-{
-    return _Sample.size();
-}
-template<typename T>
-template<typename S>
-unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::rows() const
-{
-    return _nRow;
-}
-template<typename T>
-template<typename S>
-unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::cols() const
-{
-    return _nCol;
-}
-template<typename T>
-template<typename S>
-index_t Sample<Matrix<T>>::BlockSampleImpl<S>::startRow() const
-{
-    return _i;
-}
-template<typename T>
-template<typename S>
-index_t Sample<Matrix<T>>::BlockSampleImpl<S>::startCol() const
-{
-    return _j;
-}
+// template<typename T>
+// template<typename S>
+// S &Sample<Matrix<T>>::BlockSampleImpl<S>::sample()
+// {
+//     return _Sample;
+// }
+// template<typename T>
+// template<typename S>
+// const S &Sample<Matrix<T>>::BlockSampleImpl<S>::sample() const
+// {
+//     return _Sample;
+// }
+// template<typename T>
+// template<typename S>
+// unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::size() const
+// {
+//     return _Sample.size();
+// }
+// template<typename T>
+// template<typename S>
+// unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::rows() const
+// {
+//     return _nRow;
+// }
+// template<typename T>
+// template<typename S>
+// unsigned int Sample<Matrix<T>>::BlockSampleImpl<S>::cols() const
+// {
+//     return _nCol;
+// }
+// template<typename T>
+// template<typename S>
+// index_t Sample<Matrix<T>>::BlockSampleImpl<S>::startRow() const
+// {
+//     return _i;
+// }
+// template<typename T>
+// template<typename S>
+// index_t Sample<Matrix<T>>::BlockSampleImpl<S>::startCol() const
+// {
+//     return _j;
+// }
 
 
-template<typename T>
-template<typename S>
-typename Sample<Matrix<T>>::template BlockSampleImpl<S>::BlockType
-Sample<Matrix<T>>::BlockSampleImpl<S>::operator[](unsigned int s)
-{
-    return _Sample[s].block(_i, _j, _nRow, _nCol);
-}
+// template<typename T>
+// template<typename S>
+// typename Sample<Matrix<T>>::template BlockSampleImpl<S>::BlockType
+// Sample<Matrix<T>>::BlockSampleImpl<S>::operator[](unsigned int s)
+// {
+//     return _Sample[s].block(_i, _j, _nRow, _nCol);
+// }
 
-template<typename T>
-template<typename S>
-typename Sample<Matrix<T>>::template BlockSampleImpl<S>::ConstBlockType
-Sample<Matrix<T>>::BlockSampleImpl<S>::operator[](unsigned int s) const
-{
-    return _Sample[s].block(_i, _j, _nRow, _nCol);
-}
+// template<typename T>
+// template<typename S>
+// typename Sample<Matrix<T>>::template BlockSampleImpl<S>::ConstBlockType
+// Sample<Matrix<T>>::BlockSampleImpl<S>::operator[](unsigned int s) const
+// {
+//     return _Sample[s].block(_i, _j, _nRow, _nCol);
+// }
 
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(
-                   S &s,
-                   const index_t i, const index_t j)
-                   : _Sample(s)
-                   , _i(i)
-                   , _j(j)
-{}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType> &b)
-                   : _Sample(b.sample())
-                   , _i(b._i)
-                   , _j(b._j)
-{}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType>  &&b)
-                   : ScalarSampleImpl(b)
-{}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(
+//                    S &s,
+//                    const index_t i, const index_t j)
+//                    : _Sample(s)
+//                    , _i(i)
+//                    , _j(j)
+// {}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType> &b)
+//                    : _Sample(b.sample())
+//                    , _i(b._i)
+//                    , _j(b._j)
+// {}
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S>::ScalarSampleImpl(ScalarSampleImpl<NonConstSType>  &&b)
+//                    : ScalarSampleImpl(b)
+// {}
 
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S &sample)
-{
-    FOR_SAMPLE(_Sample, s)
-    {
-        _Sample[s].block(_i, _j, 1, 1) = sample[s];
-    }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S &sample)
+// {
+//     FOR_SAMPLE(_Sample, s)
+//     {
+//         _Sample[s].block(_i, _j, 1, 1) = sample[s];
+//     }
 
-    return *this;
-}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S && sample)
-{
-    *this = sample;
-    return *this;
-}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar> &sample)
-{
-    FOR_SAMPLE(_Sample, s)
-    {
-        _Sample[s](_i, _j) = sample[s];
-    }
+//     return *this;
+// }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const S && sample)
+// {
+//     *this = sample;
+//     return *this;
+// }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar> &sample)
+// {
+//     FOR_SAMPLE(_Sample, s)
+//     {
+//         _Sample[s](_i, _j) = sample[s];
+//     }
 
-    return *this;
-}
-template<typename T>
-template<typename S>
-Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar> && sample)
-{
-    *this = sample;
-    return *this;
-}
+//     return *this;
+// }
+// template<typename T>
+// template<typename S>
+// Sample<Matrix<T>>::ScalarSampleImpl<S> &Sample<Matrix<T>>::ScalarSampleImpl<S>::operator=(const Sample<Scalar> && sample)
+// {
+//     *this = sample;
+//     return *this;
+// }
 
-template<typename T>
-template<typename S>
-S &Sample<Matrix<T>>::ScalarSampleImpl<S>::sample()
-{
-    return _Sample;
-}
-template<typename T>
-template<typename S>
-const S &Sample<Matrix<T>>::ScalarSampleImpl<S>::sample() const
-{
-    return _Sample;
-}
-template<typename T>
-template<typename S>
-unsigned int Sample<Matrix<T>>::ScalarSampleImpl<S>::size() const
-{
-    return _Sample.size();
-}
+// template<typename T>
+// template<typename S>
+// S &Sample<Matrix<T>>::ScalarSampleImpl<S>::sample()
+// {
+//     return _Sample;
+// }
+// template<typename T>
+// template<typename S>
+// const S &Sample<Matrix<T>>::ScalarSampleImpl<S>::sample() const
+// {
+//     return _Sample;
+// }
+// template<typename T>
+// template<typename S>
+// unsigned int Sample<Matrix<T>>::ScalarSampleImpl<S>::size() const
+// {
+//     return _Sample.size();
+// }
 
-template<typename T>
-template<typename S>
-typename Sample<Matrix<T>>::template ScalarSampleImpl<S>::Scalar
-Sample<Matrix<T>>::ScalarSampleImpl<S>::operator[](unsigned int s)
-{
-    return _Sample[s](_i, _j);
-}
+// template<typename T>
+// template<typename S>
+// typename Sample<Matrix<T>>::template ScalarSampleImpl<S>::Scalar
+// Sample<Matrix<T>>::ScalarSampleImpl<S>::operator[](unsigned int s)
+// {
+//     return _Sample[s](_i, _j);
+// }
 
-template<typename T>
-template<typename S>
-const typename Sample<Matrix<T>>::template ScalarSampleImpl<S>::Scalar
-Sample<Matrix<T>>::ScalarSampleImpl<S>::operator[](unsigned int s) const
-{
-    return _Sample[s].block(_i, _j);
-}
+// template<typename T>
+// template<typename S>
+// const typename Sample<Matrix<T>>::template ScalarSampleImpl<S>::Scalar
+// Sample<Matrix<T>>::ScalarSampleImpl<S>::operator[](unsigned int s) const
+// {
+//     return _Sample[s].block(_i, _j);
+// }
 
 END_NAMESPACE // LQCDA
 

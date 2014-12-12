@@ -69,11 +69,11 @@ template<typename T, int NRows = Dynamic, int NCols = Dynamic>
 using Matrix = Eigen::Matrix<T, NRows, NCols>;
 
 // block
-template<typename Derived>
-using Block = Eigen::Block<Derived>;
+template<typename Derived, int BlockRows=Dynamic, int BlockCols=Dynamic>
+using Block = Eigen::Block<Derived, BlockRows, BlockCols>;
 
-template<typename Derived>
-using ConstBlock = Eigen::Block<const Derived>;
+template<typename Derived, int BlockRows=Dynamic, int BlockCols=Dynamic>
+using ConstBlock = Eigen::Block<const Derived, BlockRows, BlockCols>;
 
 // row
 template<typename Derived>

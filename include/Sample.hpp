@@ -21,6 +21,9 @@ template<typename T>
 struct sample_traits<Sample<T>>
 {
 	typedef T SampleElement;
+	typedef T& SampleElementRef;
+	typedef const T& ConstSampleElementRef;
+	typedef T ScalarType;
 };
 
 END_NAMESPACE // internal
@@ -29,11 +32,10 @@ template<typename T>
 class Sample
 : public StatSample<Sample<T>>
 {
-protected:
-	// Typedefs
+protected: // Typedefs
 	typedef StatSample<Sample<T>> Base;
 
-public:
+public: // Constructors/Destructor
 	// Constructors
 	Sample()
 	: Base()
@@ -44,11 +46,56 @@ public:
 
 	// Destructor
 	virtual ~Sample() = default;
+
+public: // Queries
+	unsigned int rows() const
+    {
+        return 1;
+    }
+    unsigned int cols() const
+    {
+        return 1;
+    }
+    index_t startRow() const
+    {
+        return 0;
+    }
+    index_t startCol() const
+    {
+        return 0;
+    }
 };
 
 #define FOR_SAMPLE(sample, s) \
 for(unsigned int s = 0; s < (sample).size(); ++s)
 
+// Sample operators (defined with StatSampleBase for more generality)
+template<typename LhsDerived, typename RhsDerived>
+auto operator+(const StatSampleBase<LhsDerived>& lhs, const StatSampleBase<RhsDerived>& rhs)
+-> Sample<decltype(lhs[0]+rhs[0])>
+{	
+	assert(lhs.size() == rhs.size());
+	using SampleElement = decltype(lhs[0]+rhs[0]);
+    Sample<SampleElement> res(lhs.size());
+    FOR_SAMPLE(res, s)
+    {
+    	res[s] = lhs[s] + rhs[s];
+    }
+    return res;
+}
+template<typename LhsDerived, typename RhsDerived>
+auto operator-(const StatSampleBase<LhsDerived>& lhs, const StatSampleBase<RhsDerived>& rhs)
+-> Sample<decltype(lhs[0]-rhs[0])>
+{	
+	assert(lhs.size() == rhs.size());
+	using SampleElement = decltype(lhs[0]-rhs[0]);
+    Sample<SampleElement> res(lhs.size());
+    FOR_SAMPLE(res, s)
+    {
+    	res[s] = lhs[s] - rhs[s];
+    }
+    return res;
+}
 
 /******************************************************************************
 *                     Specialization for reference types                     *

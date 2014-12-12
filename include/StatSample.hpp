@@ -9,27 +9,26 @@
 #define STAT_SAMPLE_HPP
 
 #include "Globals.hpp"
+#include "Math.hpp"
+#include "StatSampleBase.hpp"
 #include "Reduction.hpp"
 #include "Statistics.hpp"
 
 BEGIN_NAMESPACE(LQCDA)
 
 #define USING_STATSAMPLE_STATS(S) \
-using S::mean; \
-using S::median; \
-using S::variance; \
-using S::covariance; \
-using S::varianceMatrix; \
-using S::covarianceMatrix;
-
-BEGIN_NAMESPACE(internal)
-
-template<typename T> struct sample_traits;
-
-END_NAMESPACE // internal
+    using S::mean; \
+    using S::median; \
+    using S::variance; \
+    using S::covariance; \
+    using S::varianceMatrix; \
+    using S::covarianceMatrix; \
+    using S::standardDeviation; \
+    using S::medianDeviation;
 
 template<typename Derived>
 class StatSample
+    : public StatSampleBase<Derived>
 {
 public:
     typedef typename internal::sample_traits<Derived>::SampleElement SampleElement;
@@ -37,8 +36,7 @@ public:
 protected:
     Array<SampleElement, Dynamic, 1> m_Sample;
 
-public:
-    // Constructors
+public: // Constructors/Destructor
     StatSample()
         : m_Sample()
     {}
@@ -49,30 +47,23 @@ public:
     StatSample(const StatSample<OtherDerived> &other)
         : m_Sample(other.m_Sample)
     {}
+    // Destructor
+    virtual ~StatSample() = default;
 
-    // Assignment
+public: // Assignment
     template<typename OtherDerived>
     Derived &operator=(const StatSample<OtherDerived> &other)
     {
         m_Sample = other.m_Sample;
     }
 
-    // Destructor
-    virtual ~StatSample() = default;
-
-    // Queries
+public: // Queries
     unsigned int size() const
     {
         return m_Sample.size();
     }
 
-    // Resize
-    void resize(unsigned int size)
-    {
-        m_Sample.resize(size);
-    }
-
-    // Subscript
+public: // Subscript
     SampleElement &operator[](unsigned int s)
     {
         return m_Sample[s];
@@ -82,21 +73,27 @@ public:
         return m_Sample[s];
     }
 
-    // Utilities
+public: // Utilities
+    // Swap
     template<typename OtherDerived>
-    void swap(const StatSample<OtherDerived>& other)
+    void swap(const StatSample<OtherDerived> &other)
     {
         m_Sample.swap(other.m_Sample);
     }
+    // Resize
+    void resize(unsigned int size)
+    {
+        m_Sample.resize(size);
+    }
 
-    // Statistics
+public: // Statistics
     SampleElement mean() const
     {
         return m_Sample.redux(&REDUX::sum<SampleElement>) / static_cast<double>(size());
     }
     SampleElement median() const
     {
-        return LQCDA::median(m_Sample.data(), m_Sample.data()+m_Sample.size());
+        return LQCDA::median(m_Sample.data(), m_Sample.data() + m_Sample.size());
     }
     SampleElement variance() const
     {
@@ -123,13 +120,18 @@ public:
 
     SampleElement standardDeviation() const
     {
-        return std::sqrt(this->variance());
+        using Eigen::sqrt;
+        using std::sqrt;
+        return sqrt(this->variance());
     }
     SampleElement medianDeviation() const
     {
-        Array<SampleElement, Dynamic, 1> tmp_Sample = (m_Sample - this->median()).abs();
-        return LQCDA::median(tmp_Sample.data(), tmp_Sample.data()+tmp_Sample.size());
+        using Eigen::abs;
+        using std::abs;
+        Array<SampleElement, Dynamic, 1> tmp_Sample = abs(m_Sample - this->median());
+        return LQCDA::median(tmp_Sample.data(), tmp_Sample.data() + tmp_Sample.size());
     }
+
 };
 
 END_NAMESPACE // LQCDA

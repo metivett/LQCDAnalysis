@@ -139,10 +139,11 @@ int main()
     {
         mySample[s] = s;
     }
-    cout << mySample.mean() << endl;
-    cout << mySample.median() << endl;
-    cout << mySample.variance() << endl;
-    cout << mySample.medianDeviation() << endl;
+    cout << "mean\n" << mySample.mean() << endl;
+    cout << "median\n" << mySample.median() << endl;
+    cout << "variance\n" << mySample.variance() << endl;
+    cout << "MAD\n" << mySample.medianDeviation() << endl;
+    cout << "stddev\n" << mySample.standardDeviation() << endl;
     cout << endl;
 
     Sample<double> mySample2(4);
@@ -150,10 +151,11 @@ int main()
     {
         mySample2[s] = s+1;
     }
-    cout << mySample2.mean() << endl;
-    cout << mySample2.median() << endl;
-    cout << mySample2.variance() << endl;
-    cout << mySample.medianDeviation() << endl;
+    cout << "mean\n" << mySample2.mean() << endl;
+    cout << "median\n" << mySample2.median() << endl;
+    cout << "variance\n" << mySample2.variance() << endl;
+    cout << "MAD\n" << mySample2.medianDeviation() << endl;
+    cout << "stddev\n" << mySample2.standardDeviation() << endl;
     cout << endl;
 
     Sample<Matrix<double>> myMatSample(4, 2, 1);
@@ -161,10 +163,25 @@ int main()
     {
         myMatSample[s] << s, s+1;
     }
-    cout << myMatSample.mean() << endl;
-    cout << myMatSample.median() << endl;
-    cout << myMatSample.variance() << endl;
-    cout << mySample.medianDeviation() << endl;
+    cout << "mean\n" << myMatSample.mean() << endl;
+    cout << "median\n" << myMatSample.median() << endl;
+    cout << "variance\n" << myMatSample.variance() << endl;
+    cout << "MAD\n" << myMatSample.medianDeviation() << endl;
+    cout << "stddev\n" << myMatSample.standardDeviation() << endl;
+    cout << endl;
+    cout << "block(0,0)" << endl;
+    cout << "mean\n" << myMatSample.block(0, 0, 1, 1).mean() << endl;
+    cout << "median\n" << myMatSample.block(0, 0, 1, 1).median() << endl;
+    cout << "variance\n" << myMatSample.block(0, 0, 1, 1).variance() << endl;
+    cout << "MAD\n" << myMatSample.block(0, 0, 1, 1).medianDeviation() << endl;
+    cout << "stddev\n" << myMatSample.block(0, 0, 1, 1).standardDeviation() << endl;
+    cout << endl;
+    cout << "elem(0,0)" << endl;
+    cout << "mean\n" << myMatSample(0, 0).mean() << endl;
+    cout << "median\n" << myMatSample(0, 0).median() << endl;
+    cout << "variance\n" << myMatSample(0, 0).variance() << endl;
+    cout << "MAD\n" << myMatSample(0, 0).medianDeviation() << endl;
+    cout << "stddev\n" << myMatSample(0, 0).standardDeviation() << endl;
 }
 
 
