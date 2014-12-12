@@ -122,7 +122,12 @@ public:
     virtual typename Minimizer<T>::Result minimize(
         const ScalarFunction<T> &F,
         const std::vector<T> &x0,
+        const std::vector<T> &e0,
         const std::vector<ScalarConstraint<T>> &c) override;
+    typename Minimizer<T>::Result minimize(
+        const ScalarFunction<T> &F,
+        const std::vector<T> &x0,
+        const std::vector<ScalarConstraint<T>> &c);
 
 };
 
@@ -133,6 +138,7 @@ template<typename T>
 typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
     const ScalarFunction<T> &F,
     const std::vector<T> &x0,
+    const std::vector<T> &e0,
     const std::vector<ScalarConstraint<T>> &c)
 {
     utils::vostream vout(std::cout, _Opts.verbosity);
@@ -141,7 +147,7 @@ typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
     // LQCDA::MIN::operator<< <T>(vout(NORMAL), _Opts) << std::endl;
 
     vout(NORMAL) << "Initial parameters:\n";
-    std::vector<T> e0(x0.size(), 0.1);
+    assert(e0.size() == x0.size());
     // for_each(e0.begin(), e0.end(), [](T& x){x*=0.01;});
     ROOT::Minuit2::MnUserParameters params(x0, e0);
     for (int i = 0; i < c.size(); i++)
@@ -208,6 +214,15 @@ typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
     }
 }
 
+template<typename T>
+typename Minimizer<T>::Result MnMigradMinimizer<T>::minimize(
+    const ScalarFunction<T> &F,
+    const std::vector<T> &x0,
+    const std::vector<ScalarConstraint<T>> &c)
+{
+    std::vector<T> e0(x0.size(), 0.1);
+    return minimize(F, x0, e0, c);
+}
 
 // template<typename T>
 // void RegisterMnMigradMinimizer()

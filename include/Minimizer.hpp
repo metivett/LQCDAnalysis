@@ -67,11 +67,38 @@ public:
 	virtual Result minimize(
 		const ScalarFunction<Scalar>& F, 
 		const std::vector<Scalar>& x0,
+		const std::vector<Scalar>& e0,
 		const std::vector<ScalarConstraint<Scalar>>& c) =0;
+	Result minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0,
+		const std::vector<ScalarConstraint<Scalar>>& c);
+	Result minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0,
+		const std::vector<Scalar>& e0);
 	Result minimize(
 		const ScalarFunction<Scalar>& F, 
 		const std::vector<Scalar>& x0);
 };
+
+template<typename T>
+typename Minimizer<T>::Result Minimizer<T>::minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0,
+		const std::vector<ScalarConstraint<Scalar>>& c)
+{
+	return minimize(F, x0, std::vector<Scalar>(x0.size(), 0.1), c);
+}
+
+template<typename T>
+typename Minimizer<T>::Result Minimizer<T>::minimize(
+		const ScalarFunction<Scalar>& F, 
+		const std::vector<Scalar>& x0,
+		const std::vector<Scalar>& e0)
+{
+	return minimize(F, x0, e0, std::vector<ScalarConstraint<Scalar>>(x0.size()));
+}
 
 template<typename T>
 typename Minimizer<T>::Result Minimizer<T>::minimize(

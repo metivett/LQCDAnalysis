@@ -107,6 +107,19 @@ int main()
     // cout << m.view(0, Eigen::Range<2>(0, 2)) << endl << endl;
     // cout << m.view(Eigen::Range<2>(0, 2), 1) << endl << endl;
 
+    // F myF;
+    // std::vector<double> p = {1., 2.};
+    // cout << myF(p) << endl;
+    // auto myBoundF = myF.bind(std::placeholders::_2, std::placeholders::_1);
+    // double d = myBoundF(2., 1.);
+    // cout << d << endl;
+
+    // Line myLine;
+    // const double x = 1., p = 2.;
+    // cout << myLine(&x, &p) << endl;
+    // auto myBoundLine = myLine.bind(std::placeholders::_1, 2);
+    // cout << myBoundLine(1) << endl;
+
     // auto myF = SFunction<double(double, double)>(f);
     // cout << myF(1, 2) << endl;
     // auto myBoundF = LQCDA::bind(myF, 1, std::placeholders::_1);
@@ -133,6 +146,12 @@ int main()
     // auto myFitResult = myFit.fit(myLine, {0., 0.}, {myAConstraint, myBConstraint});
     // for(double p: myFitResult.parameters())
     //     cout << p << endl;
+
+    Matrix<double> mat(4, 3);
+    mat << 1., 1., 1., 2., 2., 1., 3., 2., 1., 4., 5., 1.;
+
+    cout << mat << endl << endl;
+    cout << PseudoInverse(mat) << endl;
 
     Sample<double> mySample(4);
     FOR_SAMPLE(mySample, s)
