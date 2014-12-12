@@ -3,7 +3,7 @@ LD = g++
 
 CURRENT_DIR=$(CURDIR)
 
-CFLAGS = -O2 -std=c++11
+CFLAGS = -O2 -std=c++11 -g
 LDFLAGS = -fopenmp
 
 INCLUDES = -I.
@@ -15,8 +15,8 @@ INCLUDES += -I$(CURRENT_DIR)/../utils/include
 LIBS = -L$(CURRENT_DIR)/.. -lLQCDAnalysis
 LIBS += -L$(CURRENT_DIR)/../utils -lutils
 LIBS += -lMinuit2
+LIBS += -Wl,-no-as-needed -lgsl -lgslcblas -Wl,-as-needed
 LIBS += -lboost_program_options
-LIBS += -lgsl -lgslcblas
 LIBS += -lgrace_np
 
 SRC_DIR = .

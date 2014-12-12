@@ -10,7 +10,7 @@ CFLAGS = -Wall -O3 -g3 -fmessage-length=0 -std=c++11 -fPIC -MMD -MP -MF"$(@:%.o=
 LIB_NAME = libLQCDAnalysis.so
 
 INCLUDES = -I$(CURRENT_DIR)/include -I$(CURRENT_DIR)/utils/include -I$(CURRENT_DIR)
-LIBS = -lgsl -lmgl -lMinuit2
+LIBS = -lgsl -lgslcblas -lmgl -lMinuit2
 
 SRC_DIR = src
 INC_DIR = include
